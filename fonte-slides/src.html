@@ -1,0 +1,1761 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ORM: aproximando objetos e banco de dados</title>
+<style id="fonts">/*FONTS*/</style>
+<style>
+@page { size: 1920px 1080px; margin: 0; }
+:root {
+  --ink: #102C57; --ink-2: #1A3C70; --ink-3: #0A2147;
+  --paper: #D7E0EB; --paper-2: #E8EDF4; --paper-3: #C4D1E1;
+  --sky: #A9C4EA; --cream: #EDDFBE;
+  --sans: 'Instrument Sans', Arial, sans-serif;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --mono: 'JetBrains Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--paper); }
+b, strong { font-weight: 600; }
+
+/* contextos de cor */
+.slide, .lt { --bg: var(--paper); --fg: var(--ink); --mut: rgba(16,44,87,.72); --hl: rgba(16,44,87,.24); --acc: var(--ink);
+  --code: var(--ink); --acc2: #2C62B8; --warn: #BC6A20; --hlfill: #C4D1E1; }
+.pale { --bg: var(--paper-2); --hlfill: #D3DDEA; }
+.dk { --bg: var(--ink); --fg: #EEF3F9; --mut: rgba(238,243,249,.74); --hl: rgba(215,224,235,.28); --acc: var(--sky);
+  --code: var(--ink-3); --acc2: #8FB3EA; --warn: #E09A55; --hlfill: #24497F; }
+.lt, .dk, .pale { background: var(--bg); color: var(--fg); }
+
+.slide {
+  position: relative; width: 1920px; height: 1080px; overflow: hidden;
+  break-after: page; page-break-after: always;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  font-family: var(--sans); font-size: 32px; line-height: 1.34;
+  background: var(--bg); color: var(--fg);
+  padding: 124px 80px 100px; display: flex; flex-direction: column; gap: 30px;
+}
+.slide:last-child { break-after: auto; page-break-after: auto; }
+
+/* moldura */
+.hd, .ft { position: absolute; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;
+  font-size: 21px; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); z-index: 2; font-weight: 500; }
+.hd { top: 30px; }
+.ft { bottom: 26px; }
+.hd .l, .ft .l, .ft .r { display: flex; align-items: center; gap: 14px; }
+.hd .l svg, .ft .r svg { width: 20px; height: 20px; color: var(--fg); }
+.rule { position: absolute; left: 0; right: 0; height: 1px; background: var(--hl); z-index: 1; }
+.rule.t { top: 78px; } .rule.b { bottom: 74px; }
+.tick { position: absolute; width: 17px; height: 17px; z-index: 2; }
+.tick::before, .tick::after { content: ""; position: absolute; background: var(--fg); opacity: .55; }
+.tick::before { left: 8px; top: 0; width: 1px; height: 17px; }
+.tick::after { top: 8px; left: 0; height: 1px; width: 17px; }
+
+/* tipografia */
+h1, h2, h3 { font-weight: 500; letter-spacing: -.026em; }
+h2 { font-size: 58px; line-height: 1.06; text-wrap: balance; }
+p.serif, .big, .alg p { text-wrap: balance; }
+p, li, td { text-wrap: pretty; }
+h2.long { font-size: 48px; line-height: 1.12; }
+h3 { font-size: 36px; line-height: 1.15; letter-spacing: -.015em; }
+em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -.005em; font-size: 1.1em; }
+.serif { font-family: var(--serif); font-style: italic; font-weight: 400; }
+.lbl { font-size: 22px; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); font-weight: 600; }
+.mut { color: var(--mut); }
+.sm { font-size: 29px; line-height: 1.36; }
+.xs { font-size: 25px; line-height: 1.36; }
+code, .mono { font-family: var(--mono); font-size: .86em; letter-spacing: -.01em; }
+.tag { display: inline-block; white-space: nowrap; font-size: 21px; letter-spacing: .1em; text-transform: uppercase;
+  border: 1.5px solid var(--hl); padding: 5px 13px 4px; color: var(--mut); font-weight: 600; line-height: 1.2; }
+.tag.m { font-family: var(--mono); text-transform: none; letter-spacing: 0; font-size: 23px; }
+.tag.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.between { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.mk { display: inline-flex; width: 1em; height: 1em; flex: none; }
+.mk svg { width: 100%; height: 100%; }
+
+/* etiqueta de parte (1º slide de cada parte) */
+.part { display: flex; align-items: center; gap: 18px; font-size: 28px; font-weight: 500; margin-bottom: -10px; }
+.part b { background: var(--fg); color: var(--bg); padding: 7px 16px 6px; font-size: 22px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+
+/* layout */
+.body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 26px; }
+.cols { display: grid; gap: 30px; min-height: 0; }
+.stack { display: flex; flex-direction: column; gap: 22px; min-height: 0; min-width: 0; }
+.grow { flex: 1; min-height: 0; }
+.pad { padding: 28px 34px; }
+.box { border: 1.5px solid var(--hl); }
+.center { display: flex; justify-content: center; align-items: center; }
+.hg { display: grid; gap: 1px; background: var(--hl); border: 1px solid var(--hl); }
+.hg > * { background: var(--bg); padding: 28px 32px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* listas */
+ul.ls { list-style: none; }
+ul.ls li { display: flex; gap: 16px; align-items: baseline; padding: 13px 0; border-top: 1px solid var(--hl); }
+ul.ls li:last-child { border-bottom: 1px solid var(--hl); }
+ul.ls li > .bul { width: 10px; height: 10px; flex: none; background: var(--acc); transform: translateY(-4px); }
+ol.nl { list-style: none; counter-reset: n; }
+ol.nl li { counter-increment: n; display: grid; grid-template-columns: 58px 1fr; padding: 12px 0; border-top: 1px solid var(--hl); }
+ol.nl li::before { content: counter(n, decimal-leading-zero); font-size: 22px; letter-spacing: .08em; color: var(--mut); padding-top: 6px; font-weight: 600; }
+
+/* tabelas */
+table { border-collapse: collapse; width: 100%; }
+table.t th { text-align: left; font-size: 21px; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); font-weight: 600;
+  padding: 0 24px 14px 0; border-bottom: 2px solid var(--fg); }
+table.t td { padding: 16px 24px 16px 0; border-bottom: 1px solid var(--hl); vertical-align: top; font-size: 31px; line-height: 1.3; }
+table.t td:first-child { font-weight: 600; }
+table.t[style*="--x"] td { font-size: 38px; padding: 28px 24px 28px 0; }
+table.t.cmp td { padding-top: 12px; padding-bottom: 12px; font-size: 28px; }
+table.db { font-family: var(--mono); font-size: 26px; width: auto; }
+table.db th, table.db td { padding: 9px 26px 9px 16px; text-align: left; border-bottom: 1px solid var(--hl); white-space: nowrap; }
+table.db th { font-weight: 600; background: var(--fg); color: var(--bg); border-bottom: 0; }
+table.db td.on { background: var(--hlfill); font-weight: 600; }
+.dbname { font-family: var(--mono); font-size: 23px; color: var(--mut); margin-bottom: 8px; }
+
+/* código */
+.code { background: var(--code); color: #E3EAF3; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  --hl: rgba(215,224,235,.22); --mut: rgba(227,234,243,.7); --fg: #EEF3F9; --bg: var(--code); }
+.code .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 24px; border-bottom: 1px solid var(--hl);
+  font-size: 20px; letter-spacing: .1em; text-transform: uppercase; color: var(--mut); font-weight: 600; }
+.code .bar .tag { font-size: 18px; padding: 3px 10px; }
+.code pre { font-family: var(--mono); font-size: 25px; line-height: 1.48; padding: 18px 24px; white-space: pre; overflow: hidden; }
+.code pre.s { font-size: 23px; }
+.code pre.l { font-size: 29px; }
+.tk-a { color: #9FC1F2; font-weight: 600; }
+.tk-k { color: #C3D4EE; font-weight: 600; }
+.tk-s { color: var(--cream); }
+.tk-c { color: rgba(227,234,243,.55); font-style: italic; }
+
+/* alegoria */
+.alg { display: flex; flex-direction: column; gap: 10px; }
+.alg .lbl { display: flex; gap: 12px; align-items: center; }
+.alg .lbl .mk { width: 20px; height: 20px; color: var(--fg); }
+.alg p.serif { font-size: 36px; line-height: 1.12; }
+
+/* degradê (capa) */
+.grad { background:
+  radial-gradient(95% 120% at 8% 108%, #061A3A 0%, #0E2C5C 26%, #214A86 44%, rgba(96,128,176,.55) 62%, rgba(215,224,235,0) 82%),
+  radial-gradient(60% 70% at 92% 6%, #EEF2F7 0%, rgba(215,224,235,0) 70%), #D2DCE8; }
+
+/* slides divididos */
+.slide.split { padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0; --hl: rgba(110,135,172,.4); --mut: rgba(110,135,172,1); }
+.split > .half { padding: 124px 80px 100px; display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.split .hd .l, .split .ft .l { color: rgba(238,243,249,.74); } .split .hd .l svg { color: #EEF3F9; }
+.split .hd .r, .split .ft .r { color: rgba(16,44,87,.72); } .split .ft .r svg { color: var(--ink); }
+
+/* diagramas e gráficos */
+.dg { display: flex; justify-content: center; min-width: 0; }
+.dg svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+.chart { display: flex; flex-direction: column; gap: 14px; }
+.legend { display: flex; gap: 30px; font-size: 25px; align-items: center; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 22px; height: 22px; border-radius: 4px; margin-right: 10px; vertical-align: -3px; }
+.arrow { color: var(--acc); font-size: 60px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.shotwrap { position: relative; }
+.shot { display: block; width: 100%; border: 1px solid var(--hl); box-shadow: 0 14px 34px rgba(16,44,87,.2); }
+.pin { position: absolute; width: 46px; height: 46px; border-radius: 50%; background: #BC6A20; color: #fff;
+  font-weight: 700; font-size: 24px; display: flex; align-items: center; justify-content: center;
+  transform: translate(-50%, -50%); box-shadow: 0 0 0 4px #fff, 0 6px 14px rgba(0,0,0,.25); }
+ol.pins { list-style: none; counter-reset: p; display: flex; flex-direction: column; gap: 9px; }
+ol.pins li { counter-increment: p; display: grid; grid-template-columns: 50px 1fr; align-items: start; font-size: 24px; line-height: 1.3; }
+ol.pins li::before { content: counter(p); width: 36px; height: 36px; border-radius: 50%; background: #BC6A20; color: #fff;
+  font-weight: 700; font-size: 19px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.code pre.sql { font-size: 21px; line-height: 1.5; }
+.big { font-size: 36px; line-height: 1.24; letter-spacing: -.015em; }
+.num { font-size: 60px; font-weight: 400; letter-spacing: -.04em; line-height: 1; }
+</style>
+</head>
+<body>
+
+<!-- 01 · CAPA -->
+<section class="slide dk" data-plain style="padding:0">
+  <div style="position:absolute; left:0; top:0; bottom:0; width:1180px; padding:56px 80px 64px; display:flex; flex-direction:column; justify-content:space-between">
+    <div class="between lbl"><span class="row" style="gap:14px"><span class="mk" data-mark style="width:22px;height:22px;color:#EEF3F9"></span>Seminário 01</span><span>Persistência de Dados</span></div>
+    <div>
+      <p class="lbl" style="margin-bottom:28px">Object-Relational Mapping</p>
+      <h1 style="font-size:100px; line-height:1; letter-spacing:-.04em">ORM: aproximando <em>objetos</em> e banco de dados</h1>
+      <p style="font-size:36px; line-height:1.3; margin-top:32px; max-width:920px; color:var(--mut)">Como o código orientado a objetos conversa com as tabelas de um banco relacional</p>
+    </div>
+    <div class="between" style="border-top:1px solid var(--hl); padding-top:24px">
+      <span style="font-size:30px; font-weight:600">Alany Gabriely · Gabriel Brito</span>
+    </div>
+  </div>
+  <div class="grad" style="position:absolute; right:0; top:0; bottom:0; width:740px; border-left:1px solid var(--hl)">
+    <div class="dg" data-dg="coverMap" style="position:absolute; left:40px; right:40px; top:50%; transform:translateY(-50%)"></div>
+  </div>
+</section>
+
+<!-- 02 · ROTEIRO -->
+<section class="slide" data-eb="Roteiro · 8 partes">
+  <div class="between" style="align-items:flex-end"><h2>O caminho que vamos <em>percorrer</em></h2><p class="serif" style="font-size:40px; line-height:1.05; text-align:right">Pergunta-guia: como um objeto<br>vira uma linha, e volta?</p></div>
+  <div class="hg grow" style="grid-template-columns:repeat(4,1fr); grid-template-rows:1fr 1fr">
+    <div><div class="between"><span class="num">01</span><span class="lbl" data-goto="01"></span></div><div class="grow"></div><h3 style="font-size:40px">O problema</h3><p class="sm mut">Dois mundos diferentes</p></div>
+    <div><div class="between"><span class="num">02</span><span class="lbl" data-goto="02"></span></div><div class="grow"></div><h3 style="font-size:40px">O que é ORM</h3><p class="sm mut">A ponte entre eles</p></div>
+    <div><div class="between"><span class="num">03</span><span class="lbl" data-goto="03"></span></div><div class="grow"></div><h3 style="font-size:40px">Entidades</h3><p class="sm mut">Classes viram tabelas</p></div>
+    <div><div class="between"><span class="num">04</span><span class="lbl" data-goto="04"></span></div><div class="grow"></div><h3 style="font-size:40px">Atributos</h3><p class="sm mut">Campos viram colunas</p></div>
+    <div><div class="between"><span class="num">05</span><span class="lbl" data-goto="05"></span></div><div class="grow"></div><h3 style="font-size:40px">Relacionamentos</h3><p class="sm mut">Referências viram chaves</p></div>
+    <div><div class="between"><span class="num">06</span><span class="lbl" data-goto="06"></span></div><div class="grow"></div><h3 style="font-size:40px">Além do básico</h3><p class="sm mut">Herança e padrões</p></div>
+    <div class="dk"><div class="between"><span class="num">07</span><span class="lbl" data-goto="07"></span></div><div class="grow"></div><h3 style="font-size:40px">Demonstração</h3><p class="sm mut">Matrícula escolar, ao vivo</p></div>
+    <div><div class="between"><span class="num">08</span><span class="lbl" data-goto="08"></span></div><div class="grow"></div><h3 style="font-size:40px">Balanço</h3><p class="sm mut">Prós, contras, quando usar</p></div>
+  </div>
+</section>
+
+<!-- 03 · DOIS MUNDOS -->
+<section class="slide split" data-eb="Parte 1 · O problema" data-part="01">
+  <div class="half dk">
+    <div class="part"><b>Parte 01</b>O problema</div>
+    <h2>Dois mundos que pensam <em>diferente</em></h2>
+    <div class="grow"></div>
+    <h3>Mundo dos objetos <span class="mut" style="font-size:.7em; font-weight:400">Java · C# · Python</span></h3>
+    <div class="dg" data-dg="mundosObj"></div>
+    <ul class="ls" style="font-size:30px">
+      <li>Classes com dados <b>e</b> comportamento</li>
+      <li>Objetos apontam uns para os outros</li>
+      <li>Herança e listas de objetos</li>
+    </ul>
+  </div>
+  <div class="half lt">
+    <div class="alg">
+      <span class="lbl"><span class="mk" data-mark></span>Imagine</span>
+      <p class="serif" style="font-size:40px">Objetos são os contatos do celular, com links entre si; tabelas são fichas numeradas num arquivo de aço.</p>
+    </div>
+    <div class="grow"></div>
+    <h3>Mundo relacional <span class="mut" style="font-size:.7em; font-weight:400">SQL</span></h3>
+    <div class="dg" data-dg="mundosTab"></div>
+    <ul class="ls" style="font-size:30px">
+      <li>Tabelas só com valores simples</li>
+      <li>Linhas ligadas por chaves estrangeiras</li>
+      <li>Sem herança; lista vira outra tabela</li>
+    </ul>
+  </div>
+  <div style="position:absolute; left:50%; top:470px; width:110px; height:110px; transform:translateX(-50%); border-radius:50%; background:var(--paper); border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:66px; color:var(--ink); z-index:3; line-height:1">≠</div>
+</section>
+
+<!-- 04 · ALEGORIA: INTÉRPRETE -->
+<section class="slide dk" data-eb="Parte 1 · Alegoria · O intérprete">
+  <h2>O ORM é o <em>intérprete simultâneo</em> entre a aplicação e o banco de dados</h2>
+  <div class="body" style="gap:14px; justify-content:center">
+    <span class="lbl">Ida · a pergunta</span>
+    <div style="display:grid; grid-template-columns:1fr 80px 1fr 80px 1fr; align-items:stretch">
+      <div class="box stack pad" style="gap:14px">
+        <span class="lbl">01 · Aplicação</span>
+        <h3>Fala “<em>objetês</em>”</h3>
+        <div class="grow"></div>
+        <div class="code"><pre class="l">aluno.getTurma()
+     .getNome()</pre></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="lt stack pad" style="gap:14px">
+        <span class="lbl">02 · ORM</span>
+        <h3><em>Traduz</em></h3>
+        <div class="grow"></div>
+        <p class="sm">Sabe que o atributo <b>turma</b> é a coluna <code>turma_id</code> e monta o JOIN com a tabela <b>turma</b>.</p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="box stack pad" style="gap:14px">
+        <span class="lbl">03 · Banco</span>
+        <h3>Fala <em>SQL</em></h3>
+        <div class="code"><pre class="s">SELECT t.nome
+FROM turma t
+JOIN aluno a
+  ON a.turma_id = t.id
+WHERE a.id = 1</pre></div>
+      </div>
+    </div>
+    <span class="lbl" style="margin-top:14px">Volta · a resposta</span>
+    <div style="display:grid; grid-template-columns:1fr 80px 1fr 80px 1fr; align-items:stretch">
+      <div class="stack" style="gap:6px; border:2px dashed var(--hl); padding:16px 24px"><span class="xs mut">recebe o valor</span><span class="mono" style="font-size:27px">"Turma A"</span></div>
+      <div class="arrow" style="color:var(--sky)">←</div>
+      <div class="stack" style="gap:6px; border:2px dashed var(--hl); padding:16px 24px"><span class="xs mut">cria o objeto</span><span class="mono" style="font-size:27px">Turma { nome = "Turma A" }</span></div>
+      <div class="arrow" style="color:var(--sky)">←</div>
+      <div class="stack" style="gap:6px; border:2px dashed var(--hl); padding:16px 24px"><span class="xs mut">devolve a linha</span><span class="mono" style="font-size:27px">nome = 'Turma A'</span></div>
+    </div>
+  </div>
+  <p class="serif" style="font-size:38px; line-height:1.12">Ninguém precisa aprender a língua do outro. Mas quem entende um pouco das duas percebe quando a tradução sai errada.</p>
+</section>
+
+<!-- 05 · SEM ORM -->
+<section class="slide" data-eb="Parte 1 · O problema">
+  <h2>Sem ORM, a tradução é feita <em>à mão</em></h2>
+  <div class="cols grow" style="grid-template-columns:1.05fr 1fr">
+    <div class="code">
+      <div class="bar"><span>BuscarAluno.java</span><span class="tag">JDBC puro</span></div>
+      <pre>// cada campo é copiado à mão
+String sql = "SELECT id, nome, email"
+    + " FROM aluno WHERE id = ?";
+PreparedStatement ps =
+    conn.prepareStatement(sql);
+ps.setLong(1, 42);
+ResultSet rs = ps.executeQuery();
+Aluno a = null;
+if (rs.next()) {
+    a = new Aluno();
+    a.setId(rs.getLong("id"));
+    a.setNome(rs.getString("nome"));
+    a.setEmail(rs.getString("email"));
+}</pre>
+    </div>
+    <div class="stack">
+      <div class="pale pad chart">
+        <h3>Linhas de código para buscar <em>1 aluno</em></h3>
+        <div class="dg" data-dg="chartLinhas"></div>
+        <p class="xs mut">Linhas de código deste exemplo, sem o comentário. Com ORM: <code>Aluno a = em.find(Aluno.class, 42L);</code></p>
+      </div>
+      <div class="grow"></div>
+      <ul class="ls">
+        <li>O mesmo código se repete em cada classe</li>
+        <li>Coluna com nome errado só falha ao rodar</li>
+        <li>Mudou a tabela? Caçar todos os SQLs</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 06 · IMPEDÂNCIA -->
+<section class="slide" data-eb="Parte 1 · Object-Relational Impedance Mismatch">
+  <h2>O descompasso de <em>impedância</em></h2>
+  <div class="body" style="justify-content:center">
+    <table class="t">
+      <tr><th style="width:23%">Diferença</th><th style="width:39%">No mundo dos objetos</th><th>No banco relacional</th></tr>
+      <tr><td>Granularidade</td><td>Muitas classes pequenas: Cliente tem um Endereco</td><td>Poucas tabelas largas: endereço vira colunas de cliente</td></tr>
+      <tr><td>Herança</td><td>Aluno e Professor herdam de Pessoa</td><td>Não existe herança entre tabelas</td></tr>
+      <tr><td>Identidade</td><td>Mesmo objeto (<code>==</code>) ou mesmo conteúdo (<code>equals</code>)</td><td>Mesma chave primária</td></tr>
+      <tr><td>Associações</td><td>Referência com direção: <code>aluno.turma</code></td><td>Chave estrangeira sem direção: <code>turma_id</code></td></tr>
+      <tr><td>Navegação</td><td>De objeto em objeto: <code>a.getTurma()</code></td><td>Conjuntos de uma vez, com <code>JOIN</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 07 · ALEGORIA: TOMADA -->
+<section class="slide dk" data-eb="Parte 1 · Alegoria · O adaptador de tomada">
+  <h2>Por que o nome <em>“impedância”</em>?</h2>
+  <p style="font-size:32px; line-height:1.4; color:var(--mut)">Vem da engenharia elétrica: com impedâncias diferentes, a energia não passa bem de um circuito para o outro. É como levar um carregador de pinos redondos para um país de pinos chatos: <b style="color:var(--fg)">o encaixe não acontece</b>.</p>
+  <div class="dg grow" data-dg="tomada" data-scale="1.1" style="align-items:center"></div>
+  <p class="serif" style="font-size:42px; line-height:1.1">O adaptador resolve o encaixe, mas não muda a voltagem: o ORM esconde as diferenças, não as elimina.</p>
+</section>
+
+<!-- 08a · A PONTE -->
+<section class="slide" data-eb="Parte 2 · Visão geral" data-part="02">
+  <div class="part"><b>Parte 02</b>O que é ORM</div>
+  <h2>ORM: a <em>ponte</em> objeto-relacional</h2>
+  <div class="dg grow" data-dg="ponte" style="align-items:center"></div>
+</section>
+
+<!-- 08 · DEFINIÇÃO -->
+<section class="slide" data-eb="Parte 2 · Definição">
+  <h2 class="long">ORM é a técnica que <em>mapeia</em> classes para tabelas e converte sozinha objetos em linhas (ao salvar) e linhas em objetos (ao ler)</h2>
+  <div class="dg grow" data-dg="def" data-scale="1.18" style="align-items:center"></div>
+</section>
+
+<!-- 09 · OBJETO VIRA LINHA -->
+<section class="slide" data-eb="Parte 2 · Na prática">
+  <h2>Um objeto vira <em>uma linha</em></h2>
+  <div class="body" style="justify-content:center; gap:40px">
+  <div style="display:grid; grid-template-columns:1fr 76px 1fr 76px 1fr; align-items:start">
+    <div class="stack">
+      <span class="lbl">1 · Você escreve Java</span>
+      <div class="code"><pre>Aluno ana = new Aluno();
+ana.setNome("Ana Souza");
+ana.setEmail("ana@uni.br");
+ana.setCurso("SI");
+em.persist(ana);</pre></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="stack">
+      <span class="lbl">2 · O ORM gera o SQL</span>
+      <div class="code"><pre>INSERT INTO aluno
+  (nome, email, curso)
+VALUES
+  ('Ana Souza',
+   'ana@uni.br', 'SI');</pre></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="stack">
+      <span class="lbl">3 · A tabela ganha uma linha</span>
+      <table class="db" style="width:100%">
+        <tr><th>id</th><th>nome</th><th>curso</th></tr>
+        <tr><td>1</td><td>Bruno Lima</td><td>ADS</td></tr>
+        <tr><td>2</td><td>Carla Dias</td><td>SI</td></tr>
+        <tr><td class="on">3</td><td class="on">Ana Souza</td><td class="on">SI</td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="big">O <b>id 3</b> foi gerado pelo banco e copiado para o objeto: depois do <code>persist</code>, <code>ana.getId()</code> devolve <b>3</b>.</p>
+  <div class="dk row" style="padding:20px 28px; gap:22px; flex-wrap:nowrap">
+    <span class="tag">Volta</span>
+    <span class="mono" style="font-size:27px">em.find(Aluno.class, 3L) → SELECT … WHERE id = 3 → objeto Aluno preenchido</span>
+  </div>
+  </div>
+</section>
+
+<!-- 10 · CAMADAS -->
+<section class="slide" data-eb="Parte 2 · Arquitetura">
+  <h2>Onde o ORM <em>mora</em> no sistema</h2>
+  <div class="cols grow" style="grid-template-columns:820px 1fr; gap:48px">
+    <div class="dg" data-dg="camadas" style="align-items:center"></div>
+    <div class="dk stack" style="padding:32px 38px; gap:12px">
+      <div class="between"><h3>O que o ORM <em>faz por você</em></h3></div>
+      <ol class="nl" style="font-size:30px">
+        <li>Lê o mapeamento (anotações ou XML)</li>
+        <li>Gera INSERT, SELECT, UPDATE, DELETE</li>
+        <li>Converte tipos: <code>LocalDate ↔ DATE</code></li>
+        <li>Guarda objetos já lidos (cache)</li>
+        <li>Percebe mudanças (<i>dirty checking</i>)</li>
+        <li>Adapta o SQL a cada banco</li>
+        <li>Controla transações: tudo ou nada</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · FERRAMENTAS -->
+<section class="slide" data-eb="Parte 2 · Ferramentas">
+  <h2>ORMs que você vai <em>encontrar</em></h2>
+  <div class="hg grow" style="grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr">
+    <div><h3 style="font-size:44px">Hibernate</h3><p class="sm mut">Implementa a JPA; também existe o EclipseLink</p><div class="grow"></div><div class="row"><span class="tag">Java</span><span class="tag">Data Mapper</span></div></div>
+    <div><h3 style="font-size:44px">EF Core</h3><p class="sm mut">Oficial da Microsoft; consultas com LINQ</p><div class="grow"></div><div class="row"><span class="tag">C# / .NET</span><span class="tag">Data Mapper</span></div></div>
+    <div><h3 style="font-size:44px">SQLAlchemy</h3><p class="sm mut">Flexível; o Django tem ORM próprio</p><div class="grow"></div><div class="row"><span class="tag">Python</span><span class="tag">Data Mapper</span></div></div>
+    <div><h3 style="font-size:44px">Prisma</h3><p class="sm mut">Gera um cliente tipado a partir de um schema</p><div class="grow"></div><div class="row"><span class="tag">TypeScript</span><span class="tag">Schema</span></div></div>
+    <div><h3 style="font-size:44px">Active Record</h3><p class="sm mut">O ORM do Rails, que deu nome ao padrão</p><div class="grow"></div><div class="row"><span class="tag">Ruby</span><span class="tag">Active Record</span></div></div>
+    <div><h3 style="font-size:44px">Eloquent</h3><p class="sm mut">O ORM do Laravel; o Doctrine é a alternativa</p><div class="grow"></div><div class="row"><span class="tag">PHP</span><span class="tag">Active Record</span></div></div>
+  </div>
+  <div class="dk row" style="padding:20px 28px; gap:20px; font-size:31px; flex-wrap:nowrap">
+    <span class="mk" data-mark style="width:28px;height:28px"></span>
+    <span><b>JPA é a regra; o Hibernate é quem a cumpre.</b> <span class="mut">Daqui em diante: Java + JPA.</span></span>
+  </div>
+</section>
+
+<!-- 12 · ENTIDADE: CONCEITO -->
+<section class="slide" data-eb="Parte 3 · Entidades" data-part="03">
+  <div class="part"><b>Parte 03</b>Entidades</div>
+  <h2>O que é uma <em>entidade</em>?</h2>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; gap:48px">
+    <div class="stack">
+      <p style="font-size:40px; line-height:1.18; letter-spacing:-.02em">Uma classe cujos objetos precisam ser <em>guardados</em> e têm <em>identidade própria</em>: cada um é único e pode ser encontrado de novo.</p>
+      <div class="grow"></div>
+      <span class="lbl row"><span class="mk" data-mark style="width:20px;height:20px;color:var(--ink)"></span>Alegoria · A secretaria</span>
+      <div class="dg" data-dg="fichas" style="justify-content:flex-start"></div>
+    </div>
+    <div class="dk stack" style="padding:32px 38px; gap:14px">
+      <h3>Regras de uma entidade JPA</h3>
+      <ul class="ls">
+        <li>Anotada com <code>@Entity</code></li>
+        <li>Tem um identificador com <code>@Id</code></li>
+        <li>Tem construtor sem argumentos</li>
+        <li>Não é <code>final</code> (o ORM cria proxies)</li>
+      </ul>
+      <div class="grow"></div>
+      <h3>É <em>entidade</em>?</h3>
+      <p class="sm"><b>Sim:</b> <span class="mut">Aluno, Turma, Pedido, Produto</span></p>
+      <p class="sm"><b>Não:</b> <span class="mut">Endereço (só um valor), um total calculado</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · ENTIDADE: CÓDIGO -->
+<section class="slide" data-eb="Parte 3 · Entidades">
+  <h2>A entidade no código e a <em>tabela gerada</em></h2>
+  <div class="cols grow" style="grid-template-columns:1.08fr 1fr">
+    <div class="code">
+      <div class="bar"><span>Aluno.java</span><span class="tag">JPA</span></div>
+      <pre>@Entity
+@Table(name = "aluno")
+public class Aluno {
+    @Id
+    @GeneratedValue(strategy =
+        GenerationType.IDENTITY)
+    private Long id;
+    @Column(nullable = false,
+            length = 100)
+    private String nome;
+    @Column(unique = true)
+    private String email;
+    protected Aluno() { }
+}</pre>
+    </div>
+    <div class="stack">
+      <div class="code">
+        <div class="bar"><span>SQL gerado</span><span class="tag">MySQL</span></div>
+        <pre>CREATE TABLE aluno (
+  id    BIGINT AUTO_INCREMENT,
+  nome  VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE,
+  PRIMARY KEY (id)
+);</pre>
+      </div>
+      <div class="grow"></div>
+      <table class="t cmp">
+        <tr><td><code>@Entity</code></td><td>vai para o banco</td></tr>
+        <tr><td><code>@Table</code></td><td>nome da tabela</td></tr>
+        <tr><td><code>@Id</code></td><td>chave primária</td></tr>
+        <tr><td><code>@GeneratedValue</code></td><td>o banco gera o nº</td></tr>
+        <tr><td><code>@Column</code></td><td>detalhes da coluna</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · IDENTIDADE -->
+<section class="slide" data-eb="Parte 3 · Entidades">
+  <h2>Identidade: como saber <em>quem é quem</em></h2>
+  <div class="hg grow" style="grid-template-columns:repeat(3,1fr)">
+    <div><span class="mono" style="font-size:38px; font-weight:600">a == b</span><span class="lbl">Identidade Java</span><div class="dg" data-dg="id1" style="padding:14px 0"></div><div class="grow"></div><p class="sm">O <b>mesmo objeto</b> na memória: duas variáveis, uma coisa só.</p></div>
+    <div><span class="mono" style="font-size:38px; font-weight:600">a.equals(b)</span><span class="lbl">Igualdade</span><div class="dg" data-dg="id2" style="padding:14px 0"></div><div class="grow"></div><p class="sm"><b>Mesmo conteúdo</b>, como gêmeos: parecem iguais, mas são dois.</p></div>
+    <div class="dk"><span class="mono" style="font-size:38px; font-weight:600; color:var(--sky)">@Id</span><span class="lbl">Identidade no banco</span><div class="dg" data-dg="id3" style="padding:14px 0"></div><div class="grow"></div><p class="sm"><b>Mesma chave primária</b> = mesmo registro. É esta que o ORM usa.</p></div>
+  </div>
+</section>
+
+<!-- 15 · GERAÇÃO DA CHAVE -->
+<section class="slide" data-eb="Parte 3 · Entidades · @GeneratedValue">
+  <h2>Quem escolhe o <em>número</em> da chave?</h2>
+  <div class="body" style="justify-content:center">
+    <table class="t">
+      <tr><th style="width:19%">Estratégia</th><th style="width:35%">Como funciona</th><th>Alegoria</th></tr>
+      <tr><td><code>IDENTITY</code></td><td>Coluna auto-incremento do banco</td><td class="serif" style="font-size:36px">Senha da fila: o banco entrega o próximo número</td></tr>
+      <tr><td><code>SEQUENCE</code></td><td>Objeto SEQUENCE do banco</td><td class="serif" style="font-size:36px">Talão de senhas, pedido antes de salvar</td></tr>
+      <tr><td><code>TABLE</code></td><td>Tabela auxiliar guarda o próximo valor</td><td class="serif" style="font-size:36px">Caderno do porteiro: funciona, mas é lento</td></tr>
+      <tr><td><code>UUID</code></td><td>Valor aleatório de 128 bits</td><td class="serif" style="font-size:36px">Código de rastreio: único sem combinar com ninguém</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 16 · CICLO DE VIDA -->
+<section class="slide dk" data-eb="Parte 3 · Entidades · Alegoria do hotel">
+  <h2>O <em>ciclo de vida</em> de uma entidade</h2>
+  <div class="dg grow" data-dg="ciclo" style="align-items:center"></div>
+</section>
+
+<!-- 17 · TIPOS -->
+<section class="slide" data-eb="Parte 4 · Atributos" data-part="04">
+  <div class="part"><b>Parte 04</b>Mapeamento de atributos</div>
+  <h2>Cada tipo Java tem um <em>par</em> no SQL</h2>
+  <div class="cols grow" style="grid-template-columns:1100px 1fr; gap:44px">
+    <div class="dg" data-dg="tipos" style="align-items:flex-start"></div>
+    <div class="stack" style="gap:18px">
+      <div class="dk pad alg">
+        <span class="lbl"><span class="mk" data-mark></span>Casa de câmbio</span>
+        <p class="serif" style="font-size:34px">O valor é o mesmo, muda a “moeda”, sempre pela mesma tabela de conversão.</p>
+      </div>
+      <div class="box pad stack" style="gap:6px; border-color:var(--acc2); border-width:3px">
+        <h3>Dinheiro</h3>
+        <p class="sm">Nunca <code>double</code>: <code>BigDecimal ↔ DECIMAL</code> não perde centavos.</p>
+      </div>
+      <div class="box pad stack" style="gap:6px">
+        <h3><code>int</code> × <code>Integer</code></h3>
+        <p class="sm"><code>int</code> nunca é <code>null</code>. Coluna aceita NULL? Use <code>Integer</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 · ANOTAÇÕES -->
+<section class="slide" data-eb="Parte 4 · Atributos · 6 anotações">
+  <h2>Ajustando cada <em>atributo</em></h2>
+  <div class="hg grow" style="grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr">
+    <div><div class="code"><pre class="s">@Column(name="nm_aluno",
+  length=150, nullable=false)</pre></div><div class="grow"></div><div class="between"><span class="mono" style="font-size:32px; font-weight:600">@Column</span><span class="tag">coluna</span></div><p class="sm mut">Nome, tamanho, nulo, único</p></div>
+    <div><div class="code"><pre class="s">@Transient
+private int idade;</pre></div><div class="grow"></div><div class="between"><span class="mono" style="font-size:32px; font-weight:600">@Transient</span><span class="tag">ignorar</span></div><p class="sm mut"><b style="color:var(--fg)">Não</b> vai para o banco</p></div>
+    <div><div class="code"><pre class="s">@Enumerated(EnumType.STRING)
+private Status status;</pre></div><div class="grow"></div><div class="between"><span class="mono" style="font-size:32px; font-weight:600">@Enumerated</span><span class="tag">enum</span></div><p class="sm mut">Grava “ATIVO”, não a posição</p></div>
+    <div><div class="code"><pre class="s">@Lob
+private byte[] foto;</pre></div><div class="grow"></div><div class="between"><span class="mono" style="font-size:32px; font-weight:600">@Lob</span><span class="tag">grande</span></div><p class="sm mut">Textos e arquivos grandes</p></div>
+    <div><div class="code"><pre class="s">// sem anotação!
+private LocalDate nascimento;</pre></div><div class="grow"></div><div class="between"><span class="mono" style="font-size:32px; font-weight:600">java.time</span><span class="tag">datas</span></div><p class="sm mut">Mapeado sozinho (JPA 2.2+)</p></div>
+    <div><div class="code"><pre class="s">@Convert(converter =
+  CpfConverter.class)</pre></div><div class="grow"></div><div class="between"><span class="mono" style="font-size:32px; font-weight:600">@Convert</span><span class="tag">próprio</span></div><p class="sm mut">Seu conversor (ex.: CPF)</p></div>
+  </div>
+</section>
+
+<!-- 19 · EMBUTIDOS -->
+<section class="slide" data-eb="Parte 4 · Atributos · @Embeddable">
+  <h2>Uma classe a mais, <em>nenhuma tabela nova</em></h2>
+  <div class="cols grow" style="grid-template-columns:600px 1fr; gap:44px">
+    <div class="code">
+      <div class="bar"><span>Cliente.java</span><span class="tag">JPA</span></div>
+      <pre class="s">@Embeddable
+public class Endereco {
+    private String rua;
+    private String cidade;
+    private String cep;
+}
+
+@Entity
+public class Cliente {
+    @Id @GeneratedValue
+    private Long id;
+    private String nome;
+    @Embedded
+    private Endereco endereco;
+}</pre>
+    </div>
+    <div class="stack">
+      <div class="dg" data-dg="embed"></div>
+      <div class="grow"></div>
+      <div class="dk pad alg">
+        <span class="lbl"><span class="mk" data-mark></span>Alegoria · A gaveta</span>
+        <p class="serif">O endereço é uma gaveta: organizada, mas só existe dentro do armário (cliente). Sem @Id, sem tabela.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 · CONVENÇÕES -->
+<section class="slide" data-eb="Parte 4 · Convenção sobre configuração">
+  <h2>O ORM <em>adivinha o óbvio</em>; você só anota o que foge do padrão</h2>
+  <div class="body">
+    <table class="t">
+      <tr><th style="width:24%">Na classe</th><th style="width:38%">O ORM assume, sem anotação</th><th>Anote quando…</th></tr>
+      <tr><td><code>class Aluno</code></td><td>tabela <code>aluno</code></td><td>a tabela é <code>TB_ALUNO</code></td></tr>
+      <tr><td><code>nomeCompleto</code></td><td>coluna <code>nome_completo</code> *</td><td>a coluna tem outro nome</td></tr>
+      <tr><td><code>String email</code></td><td><code>VARCHAR(255)</code>, aceita NULL</td><td>precisa de NOT NULL ou outro tamanho</td></tr>
+      <tr><td><code>Long id</code></td><td>nada: não adivinha a chave</td><td><b>sempre:</b> <code>@Id</code> é obrigatório</td></tr>
+    </table>
+    <div class="grow"></div>
+    <div class="dk row" style="padding:24px 30px; gap:24px; flex-wrap:nowrap">
+      <span class="lbl" style="white-space:nowrap">Alegoria</span>
+      <p class="serif" style="font-size:38px; line-height:1.1">A costureira já tem o molde M: você só pede ajuste onde o seu corpo é diferente.</p>
+    </div>
+    <p class="xs mut">* Com a estratégia de nomes do Spring Boot. No Hibernate puro, a coluna fica <code>nomeCompleto</code>.</p>
+  </div>
+</section>
+
+<!-- 21 · QUATRO TIPOS -->
+<section class="slide dk" data-eb="Parte 5 · Relacionamentos · Cardinalidade" data-part="05">
+  <div class="part"><b>Parte 05</b>Relacionamentos</div>
+  <div class="between" style="align-items:flex-end"><h2>Os <em>quatro tipos</em> de relacionamento</h2><div class="dg" data-dg="legendER"></div></div>
+  <div class="hg grow" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr">
+    <div style="flex-direction:row; gap:30px; align-items:center"><span style="font-size:104px; letter-spacing:-.05em; min-width:190px; line-height:1">1:1</span><div class="stack" style="gap:8px"><div class="row"><span class="tag m">@OneToOne</span></div><h3>Um aluno, uma carteirinha</h3><div class="dg" data-dg="mini11" style="justify-content:flex-start"></div></div></div>
+    <div style="flex-direction:row; gap:30px; align-items:center"><span style="font-size:104px; letter-spacing:-.05em; min-width:190px; line-height:1">1:N</span><div class="stack" style="gap:8px"><div class="row"><span class="tag m">@OneToMany</span></div><h3>Uma turma, muitos alunos</h3><div class="dg" data-dg="mini1n" style="justify-content:flex-start"></div></div></div>
+    <div style="flex-direction:row; gap:30px; align-items:center"><span style="font-size:104px; letter-spacing:-.05em; min-width:190px; line-height:1">N:1</span><div class="stack" style="gap:8px"><div class="row"><span class="tag m">@ManyToOne</span></div><h3>O mesmo, visto do aluno</h3><div class="dg" data-dg="minin1" style="justify-content:flex-start"></div></div></div>
+    <div class="lt" style="flex-direction:row; gap:30px; align-items:center"><span style="font-size:104px; letter-spacing:-.05em; min-width:190px; line-height:1">N:N</span><div class="stack" style="gap:8px"><div class="row"><span class="tag m">@ManyToMany</span></div><h3>Alunos e disciplinas</h3><div class="dg" data-dg="mininn" style="justify-content:flex-start"></div></div></div>
+  </div>
+</section>
+
+<!-- 23 · 1:1 -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos · @OneToOne">
+  <h2>1:1 · um aluno, <em>uma carteirinha</em></h2>
+  <div class="cols grow" style="grid-template-columns:780px 1fr; gap:44px">
+    <div class="code">
+      <div class="bar"><span>Aluno.java · Carteirinha.java</span><span class="tag">JPA</span></div>
+      <pre class="s">@Entity
+public class Aluno {
+    @Id @GeneratedValue
+    private Long id;
+    private String nome;
+    @OneToOne
+    @JoinColumn(name = "carteirinha_id",
+                unique = true)
+    private Carteirinha carteirinha;
+}
+@Entity
+public class Carteirinha {
+    @Id @GeneratedValue
+    private Long id;
+    private String codigo;
+}</pre>
+    </div>
+    <div class="stack">
+      <div class="dg" data-dg="er11"></div>
+      <div class="grow"></div>
+      <ul class="ls">
+        <li><span><code>@JoinColumn</code>: qual coluna guarda a FK</span></li>
+        <li><span><code>unique = true</code>: duas pessoas nunca dividem a mesma carteirinha</span></li>
+        <li><span>Bom para dados opcionais ou pesados (foto, prontuário)</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 24 · 1:N -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos · @OneToMany + @ManyToOne">
+  <h2>1:N · a turma e <em>seus alunos</em></h2>
+  <div class="cols" style="grid-template-columns:1fr 1fr">
+    <div class="code">
+      <div class="bar"><span>Turma.java</span><span class="tag">lado “um”</span></div>
+      <pre class="s">@Entity
+public class Turma {
+    @Id @GeneratedValue
+    private Long id;
+    @OneToMany(mappedBy = "turma")
+    private List&lt;Aluno&gt; alunos;
+}</pre>
+    </div>
+    <div class="code">
+      <div class="bar"><span>Aluno.java</span><span class="tag">lado “muitos” · dono</span></div>
+      <pre class="s">@Entity
+public class Aluno {
+    @Id @GeneratedValue
+    private Long id;
+    @ManyToOne
+    @JoinColumn(name = "turma_id")
+    private Turma turma;
+}</pre>
+    </div>
+  </div>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; align-items:center">
+    <div class="dg" data-dg="er1n"></div>
+    <div class="dk pad stack" style="gap:10px">
+      <h3>Quem é o <em>dono</em>?</h3>
+      <p class="sm">Quem guarda a FK: <b>Aluno</b>. O <code>mappedBy</code> em Turma diz “o mapeamento está em <code>Aluno.turma</code>”, sem criar outra coluna.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 25 · N:N -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos · @ManyToMany">
+  <h2>N:N · alunos e <em>disciplinas</em></h2>
+  <div class="cols grow" style="grid-template-columns:760px 1fr; gap:44px">
+    <div class="stack">
+      <div class="code">
+        <div class="bar"><span>Aluno.java</span><span class="tag">dono</span></div>
+        <pre class="s">@ManyToMany
+@JoinTable(
+  name = "aluno_disciplina",
+  joinColumns =
+    @JoinColumn(name = "aluno_id"),
+  inverseJoinColumns =
+    @JoinColumn(name = "disciplina_id"))
+private Set&lt;Disciplina&gt; disciplinas;
+
+// em Disciplina.java:
+@ManyToMany(mappedBy = "disciplinas")</pre>
+      </div>
+      <div class="grow"></div>
+      <div class="box pad stack" style="gap:8px">
+        <h3>Precisa guardar <em>nota ou data</em>?</h3>
+        <p class="sm mut">A junção vira a entidade <b style="color:var(--fg)">Matricula</b>, com dois <code>@ManyToOne</code>.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="dg" data-dg="ernn"></div>
+      <div class="row" style="gap:36px; align-items:flex-start; flex-wrap:nowrap">
+        <div><p class="dbname">aluno_disciplina</p><table class="db"><tr><th>aluno_id</th><th>disciplina_id</th></tr><tr><td>1 (Ana)</td><td>10 (BD)</td></tr><tr><td>1 (Ana)</td><td>20 (POO)</td></tr><tr><td>2 (Bruno)</td><td>10 (BD)</td></tr></table></div>
+      </div>
+      <div class="grow"></div>
+      <div class="dk pad alg">
+        <span class="lbl"><span class="mk" data-mark></span>Alegoria</span>
+        <p class="serif">É o diário de classe: só registra quem cursa o quê.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 26 · DIREÇÃO E DONO -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos">
+  <h2>Direção e <em>dono</em> do relacionamento</h2>
+  <div class="cols grow" style="grid-template-columns:860px 1fr; gap:50px">
+    <div class="dg" data-dg="dir" style="align-items:center"></div>
+    <div class="stack" style="justify-content:center; gap:20px">
+      <p class="sm"><b>Uni:</b> só um lado conhece o outro.<br><b>Bi:</b> os dois se conhecem.</p>
+      <div class="pale" style="padding:18px 24px"><span class="lbl">Cuidado</span><p class="sm">No bidirecional, atualize <b>os dois lados</b> em Java.</p></div>
+      <p class="sm">O <b>dono</b> é o lado com a FK na tabela. O outro lado usa <code>mappedBy</code> para não criar coluna repetida.</p>
+      <div class="dk pad alg">
+        <span class="lbl"><span class="mk" data-mark></span>Alegoria</span>
+        <p class="serif" style="font-size:34px">Só um cartório registra a escritura; os outros consultam.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 27 · CASCATA -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos">
+  <h2>Cascata e <em>órfãos</em></h2>
+  <div class="dg grow" data-dg="cascade" style="align-items:center"></div>
+  <div class="code">
+    <div class="bar"><span>Pedido.java</span><span class="tag">tudo junto</span></div>
+    <pre>@OneToMany(mappedBy = "pedido",
+           cascade = CascadeType.ALL, orphanRemoval = true)
+private List&lt;ItemPedido&gt; itens = new ArrayList&lt;&gt;();</pre>
+  </div>
+  <p class="serif" style="font-size:36px">Alegoria: apagar a pasta apaga os arquivos que estão dentro.</p>
+</section>
+
+<!-- 28 · LAZY × EAGER -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos · Carregamento">
+  <h2>Carregar agora ou <em>só quando precisar</em>?</h2>
+  <div class="dg" data-dg="lazy"></div>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; gap:0">
+    <div class="pale stack" style="padding:24px 32px; gap:10px">
+      <p class="sm"><b>LAZY:</b> <span class="serif" style="font-size:1.15em">o episódio só carrega quando você dá play</span></p>
+      <p class="sm">+ economiza consultas e memória<br>− erro se a sessão já fechou</p>
+    </div>
+    <div class="dk stack" style="padding:24px 32px; gap:10px">
+      <p class="sm"><b>EAGER:</b> <span class="serif" style="font-size:1.15em; color:var(--sky)">baixa a temporada inteira antes da viagem</span></p>
+      <p class="sm">+ dados sempre à mão<br>− traz o que talvez nunca seja usado</p>
+    </div>
+  </div>
+  <div class="box row" style="padding:16px 26px; gap:20px; flex-wrap:nowrap">
+    <span class="lbl">Padrão JPA</span>
+    <span class="tag m">…ToOne → EAGER</span><span class="tag m">…ToMany → LAZY</span>
+    <span style="margin-left:auto; font-size:30px"><b>Boa prática:</b> tudo LAZY + <code>JOIN FETCH</code></span>
+  </div>
+</section>
+
+<!-- 29 · N+1 -->
+<section class="slide" data-eb="Parte 5 · Relacionamentos · Desempenho">
+  <h2>A ilusão da abstração: o problema <em>N+1</em></h2>
+  <div class="dg grow" data-dg="n1cascade" data-scale="0.84" style="align-items:center"></div>
+  <div class="cols" style="grid-template-columns:1fr 1fr">
+    <div class="box pad stack" style="gap:8px"><h3>A <em>causa</em></h3><p class="sm">Um laço dispara, sem ninguém ver, uma consulta por item, em vez de uma única consulta com JOIN.</p></div>
+    <div class="box pad stack" style="gap:8px"><h3>O <em>efeito</em></h3><p class="sm">Cada ida ao banco soma tempo de rede: com muitos itens, a tela fica lenta. É o gargalo mais comum de um ORM mal configurado.</p></div>
+  </div>
+</section>
+
+<!-- 31 · TRANSAÇÃO -->
+<section class="slide" data-eb="Parte 5 · Juntando tudo">
+  <h2>O que acontece <em>numa transação</em></h2>
+  <div class="cols grow" style="grid-template-columns:600px 1fr; gap:40px">
+    <div class="stack">
+      <div class="code">
+        <div class="bar"><span>Matricular.java</span><span class="tag">transação</span></div>
+        <pre class="s">  em.getTransaction().begin();
+<span class="tk-a">1</span> Turma t =
+    em.find(Turma.class, 7L);
+<span class="tk-a">2</span> Aluno a = new Aluno("Ana");
+  a.setTurma(t);
+<span class="tk-a">3</span> em.persist(a);
+<span class="tk-a">4</span> t.setNome("Turma B");
+<span class="tk-a">5</span> em.getTransaction().commit();</pre>
+      </div>
+      <div class="box" style="padding:16px 22px; border-color:var(--warn); border-width:3px">
+        <p class="xs"><b>Atenção:</b> vale para chaves por <code>SEQUENCE</code>. Com <code>IDENTITY</code>, o banco precisa gerar o id, então o INSERT sai já no <code>persist()</code>.</p>
+      </div>
+      <div class="grow"></div>
+      <div class="dk pad alg">
+        <span class="lbl"><span class="mk" data-mark></span>Unit of Work</span>
+        <p class="serif" style="font-size:34px">Um carrinho de compras: o ORM anota tudo e só passa no caixa no commit.</p>
+      </div>
+    </div>
+    <div class="dg" data-dg="seq" style="align-items:center"></div>
+  </div>
+</section>
+
+<!-- 32 · DESAFIO DA HERANÇA -->
+<section class="slide" data-eb="Parte 6 · Herança" data-part="06">
+  <div class="part"><b>Parte 06</b>Além do básico</div>
+  <h2>O desafio da <em>herança</em> no banco relacional</h2>
+  <div class="grow" style="display:grid; grid-template-columns:400px 1fr 400px; gap:30px; align-items:start; min-height:0">
+    <div class="box stack" style="gap:0">
+      <div style="background:var(--ink); color:var(--paper); padding:14px 24px; font-size:28px; font-weight:600">A abstração (POO)</div>
+      <p class="sm" style="padding:22px 24px">Herança é nativa: Aluno e Professor reaproveitam tudo de Pessoa, de forma elegante.</p>
+    </div>
+    <div class="dg" data-dg="inhChallenge" data-scale="0.9"></div>
+    <div class="box stack" style="gap:0">
+      <div style="background:#2C62B8; color:#fff; padding:14px 24px; font-size:28px; font-weight:600">A limitação (banco)</div>
+      <p class="sm" style="padding:22px 24px">O modelo relacional não tem herança: só tabelas, colunas e chaves.</p>
+    </div>
+  </div>
+  <div class="dk row" style="padding:22px 30px; gap:26px; flex-wrap:nowrap">
+    <span class="tag" style="white-space:nowrap">A missão do ORM</span>
+    <p style="font-size:30px; line-height:1.3">Achatar a árvore de herança em tabelas <b>sem perder integridade</b>, <b>sem redundância exagerada</b> e <b>sem destruir o desempenho</b> de leitura.</p>
+  </div>
+</section>
+
+<!-- 32b · ESTRATÉGIAS DE HERANÇA -->
+<section class="slide" data-eb="Parte 6 · @Inheritance(strategy = …)">
+  <h2>Três estratégias para mapear a <em>herança</em></h2>
+  <div class="hg grow" style="grid-template-columns:repeat(3,1fr)">
+    <div><div class="between"><h3>Tabela única</h3><span class="tag m">SINGLE_TABLE</span></div><div class="dg" data-dg="inhSingle" style="justify-content:flex-start"></div><p class="sm">Uma tabela para a família toda.</p><div class="grow"></div><p class="xs"><b>+</b> leitura rápida, zero JOIN<br><b>−</b> colunas NULL para quem não usa</p></div>
+    <div><div class="between"><h3>Por subclasse</h3><span class="tag m">JOINED</span></div><div class="dg" data-dg="inhJoined" style="justify-content:flex-start"></div><p class="sm">Tabelas normalizadas ligadas por FK.</p><div class="grow"></div><p class="xs"><b>+</b> sem NULL, boa integridade<br><b>−</b> JOIN em toda consulta</p></div>
+    <div><div class="between"><h3>Por classe</h3><span class="tag m">TABLE_PER_CLASS</span></div><div class="dg" data-dg="inhTpc" style="justify-content:flex-start"></div><p class="sm">Uma tabela por classe concreta.</p><div class="grow"></div><p class="xs"><b>+</b> tabelas independentes<br><b>−</b> colunas repetidas; “todas as pessoas” pede UNION</p></div>
+  </div>
+</section>
+
+<!-- 33 · ACTIVE RECORD × DATA MAPPER -->
+<section class="slide" data-eb="Parte 6 · Padrões de Martin Fowler">
+  <h2>Active Record <em>vs</em> Data Mapper</h2>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; gap:0">
+    <div class="pale stack" style="padding:30px 36px; gap:18px">
+      <div class="between"><h3 style="font-size:40px">O objeto <em>se salva</em></h3><span class="tag">Rails · Django</span></div>
+      <div class="dg" data-dg="ar"></div>
+      <div class="code"><pre>aluno = Aluno.new(nome: "Ana")
+aluno.save   # ele mesmo grava</pre></div>
+      <div class="grow"></div>
+      <p class="serif" style="font-size:36px; line-height:1.1">O aluno leva a própria ficha à secretaria e a arquiva.</p>
+    </div>
+    <div class="dk stack" style="padding:30px 36px; gap:18px">
+      <div class="between"><h3 style="font-size:40px">Alguém <em>salva por ele</em></h3><span class="tag">JPA · EF Core</span></div>
+      <div class="dg" data-dg="dm"></div>
+      <div class="code"><pre>Aluno aluno = new Aluno("Ana");
+em.persist(aluno); // outro grava</pre></div>
+      <div class="grow"></div>
+      <p class="serif" style="font-size:36px; line-height:1.1; color:var(--sky)">O aluno só preenche; a secretaria arquiva.</p>
+    </div>
+  </div>
+</section>
+
+<!-- D2 · O MODELO -->
+<section class="slide" data-eb="Parte 7 · Demonstração · Modelo" data-part="07">
+  <div class="part"><b>Parte 07</b>Demonstração · Matrícula escolar</div>
+  <h2>Nosso projeto: três entidades, <em>dois relacionamentos</em></h2>
+  <div class="cols grow" style="grid-template-columns:1030px 1fr; gap:40px; align-items:start">
+    <img class="shot" src="img/uml-modelo.png" alt="Diagrama de classes e tabelas geradas">
+    <div class="stack" style="gap:16px">
+      <div class="box pad stack" style="gap:8px">
+        <h3>Turma <em>1 : N</em> Aluno</h3>
+        <p class="sm">Cada aluno tem <b>no máximo uma</b> turma: a coluna <code>aluno.turma_id</code>.</p>
+      </div>
+      <div class="box pad stack" style="gap:8px">
+        <h3>Aluno <em>N : N</em> Disciplina</h3>
+        <p class="sm">Um aluno cursa <b>várias</b> disciplinas: uma linha em <code>aluno_disciplina</code> para cada.</p>
+      </div>
+      <div class="dk pad stack" style="gap:8px">
+        <span class="lbl">O banco recusa</span>
+        <p class="sm">o mesmo aluno em duas turmas · a mesma disciplina duas vezes · dois alunos com o mesmo e-mail</p>
+      </div>
+      <p class="xs mut">Java 17 · <b>Hibernate 7.4</b> · <b>PostgreSQL 17</b> · Swing</p>
+    </div>
+  </div>
+</section>
+
+<!-- D4 · CONFIGURAÇÃO E ARQUITETURA -->
+<section class="slide" data-eb="Parte 7 · Demonstração · Arquitetura">
+  <h2>Configuração e <em>camadas</em> do projeto</h2>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; gap:40px">
+    <div class="stack" style="gap:20px">
+      <div class="code">
+        <div class="bar"><span>META-INF/persistence.xml</span><span class="tag">JPA</span></div>
+        <pre class="sql">&lt;persistence-unit name="escola"&gt;
+  &lt;class&gt;modelo.Aluno&lt;/class&gt;
+  &lt;class&gt;modelo.Turma&lt;/class&gt;
+  &lt;class&gt;modelo.Disciplina&lt;/class&gt;
+  &lt;properties&gt;
+    &lt;property value="drop-and-create"
+      name="jakarta.persistence.schema-generation
+            .database.action"/&gt;
+    &lt;property name="hibernate.show_sql" value="true"/&gt;
+  &lt;/properties&gt;
+&lt;/persistence-unit&gt;</pre>
+      </div>
+      <ul class="ls sm">
+        <li><span><b>drop-and-create:</b> a cada abertura, o Hibernate recria as tabelas a partir das classes.</span></li>
+        <li><span>URL, usuário e senha vêm de <code>db.properties</code>.</span></li>
+      </ul>
+    </div>
+    <div class="stack" style="gap:20px">
+      <table class="t cmp">
+        <tr><th style="width:40%">Pacote</th><th>Responsabilidade</th></tr>
+        <tr><td><code>modelo</code></td><td>Aluno, Turma, Disciplina (entidades)</td></tr>
+        <tr><td><code>persistencia</code></td><td>fábrica do JPA, conexão, captura do SQL</td></tr>
+        <tr><td><code>negocio</code></td><td>os passos da demonstração (<code>Escola</code>)</td></tr>
+        <tr><td><code>visao</code></td><td>a janela em Swing</td></tr>
+      </table>
+      <div class="code">
+        <div class="bar"><span>persistencia/MonitorSQL.java</span><span class="tag">o placar</span></div>
+        <pre class="sql">public class MonitorSQL implements StatementInspector {
+    public String inspect(String sql) {
+        contador++;           // placar da tela
+        avisarPainel(sql);    // painel da direita
+        return sql;           // segue para o banco
+    }
+}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- D7 · PASSOS 4 E 5 -->
+<section class="slide" data-eb="Parte 7 · Demonstração · Passos 4 e 5">
+  <h2>O problema N+1 <em>na tela</em></h2>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; gap:40px; align-items:start">
+    <div class="stack" style="gap:16px">
+      <div class="between"><h3 style="font-size:36px">4 · Laço com LAZY</h3><span class="tag m" style="border-color:#BC6A20; color:#BC6A20">N+1</span></div>
+      <img class="shot" src="img/d4-nmais1-direita.png" alt="Placar marcando 11 comandos">
+      <div class="code">
+        <div class="bar"><span>SQL enviado</span><span class="tag">11 comandos</span></div>
+        <pre class="sql">SELECT … FROM turma ORDER BY id              -- 1
+SELECT … FROM aluno WHERE turma_id = ?       -- +1
+… mais 9 vezes, uma por turma</pre>
+      </div>
+    </div>
+    <div class="stack" style="gap:16px">
+      <div class="between"><h3 style="font-size:36px">5 · JOIN FETCH</h3><span class="tag m" style="border-color:#2C62B8; color:#2C62B8">1 consulta</span></div>
+      <img class="shot" src="img/d5-joinfetch-direita.png" alt="Placar marcando 1 comando">
+      <div class="code">
+        <div class="bar"><span>SQL enviado</span><span class="tag">1 comando</span></div>
+        <pre class="sql">SELECT DISTINCT t.id, t.nome, a.id, a.nome, …
+FROM turma t
+LEFT JOIN aluno a ON t.id = a.turma_id</pre>
+      </div>
+    </div>
+  </div>
+  <p class="big">Mesmo resultado na tela, <b>11 idas ao banco contra 1</b>. É o problema explicado no slide 29, agora no nosso projeto.</p>
+</section>
+
+<!-- 35 · VANTAGENS -->
+<section class="slide dk" data-eb="Parte 8 · Vantagens" data-part="08">
+  <div class="part"><b>Parte 08</b>Balanço</div>
+  <h2>O que o ORM traz <em>de bom</em></h2>
+  <div class="hg grow" style="grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr">
+    <div><span class="mk" data-mark style="width:34px;height:34px;color:var(--sky)"></span><div class="grow"></div><h3 style="font-size:40px">Produtividade</h3><p class="sm mut">Nada de copiar coluna por coluna.</p></div>
+    <div><span class="mk" data-mark style="width:34px;height:34px;color:var(--sky)"></span><div class="grow"></div><h3 style="font-size:40px">Pensar em <em>objetos</em></h3><p class="sm mut">Aluno e Turma, não linhas e colunas.</p></div>
+    <div><span class="mk" data-mark style="width:34px;height:34px;color:var(--sky)"></span><div class="grow"></div><h3 style="font-size:40px">Portabilidade</h3><p class="sm mut">Trocar de banco muda o dialeto, não o código.</p></div>
+    <div><span class="mk" data-mark style="width:34px;height:34px;color:var(--sky)"></span><div class="grow"></div><h3 style="font-size:40px">Segurança</h3><p class="sm mut">Parâmetros vinculados contra SQL injection.</p></div>
+    <div><span class="mk" data-mark style="width:34px;height:34px;color:var(--sky)"></span><div class="grow"></div><h3 style="font-size:40px">Cache e transações</h3><p class="sm mut">Não relê o que já tem; agrupa gravações.</p></div>
+    <div><span class="mk" data-mark style="width:34px;height:34px;color:var(--sky)"></span><div class="grow"></div><h3 style="font-size:40px">Um só <em>lugar</em></h3><p class="sm mut">O mapeamento fica junto da classe.</p></div>
+  </div>
+</section>
+
+<!-- 36 · CUIDADOS -->
+<section class="slide" data-eb="Parte 8 · Cuidados">
+  <h2>Onde o ORM pode <em>atrapalhar</em></h2>
+  <div class="hg grow" style="grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr">
+    <div><span class="lbl">01</span><div class="grow"></div><h3 style="font-size:40px">Abstração que vaza</h3><p class="sm mut">Sem ler o SQL gerado, não dá para saber por que ficou lento.</p></div>
+    <div><span class="lbl">02</span><div class="grow"></div><h3 style="font-size:40px">Consultas N+1</h3><p class="sm mut">Laços que disparam uma consulta por item.</p></div>
+    <div><span class="lbl">03</span><div class="grow"></div><h3 style="font-size:40px">Curva de aprendizado</h3><p class="sm mut">Sessão, ciclo de vida, cascata, carregamento.</p></div>
+    <div><span class="lbl">04</span><div class="grow"></div><h3 style="font-size:40px">Relatórios pesados</h3><p class="sm mut">Milhões de linhas: SQL direto é melhor.</p></div>
+    <div><span class="lbl">05</span><div class="grow"></div><h3 style="font-size:40px">Memória e CPU</h3><p class="sm mut">Transformar cada linha em objeto custa.</p></div>
+    <div><span class="lbl">06</span><div class="grow"></div><h3 style="font-size:40px">“Mágica” <em>demais</em></h3><p class="sm mut">Cascata e dirty checking geram SQL escondido.</p></div>
+  </div>
+  <div class="dk row" style="padding:20px 28px; gap:22px; flex-wrap:nowrap">
+    <span class="tag">Dica</span>
+    <span style="font-size:30px">Ligue o log de SQL (<code style="color:var(--sky)">spring.jpa.show-sql=true</code>) e leia o que o ORM envia.</span>
+  </div>
+</section>
+
+<!-- 37 · A ESCOLHA DA FERRAMENTA -->
+<section class="slide" data-eb="Parte 8 · Decisão">
+  <h2>A escolha da ferramenta: ORM <em>vs</em> SQL nativo</h2>
+  <div class="dg" data-dg="espectro"></div>
+  <div class="cols grow" style="grid-template-columns:1fr 1fr; gap:40px">
+    <div class="stack" style="border:3px solid #2C62B8; gap:0">
+      <div class="between" style="padding:18px 30px; border-bottom:2px solid #2C62B8"><h3 style="font-size:38px">SQL nativo</h3><span class="mk" data-dg-icon="sql"></span></div>
+      <div class="stack" style="padding:18px 30px; gap:12px">
+        <div><p class="lbl">Vantagens</p><p class="sm">Controle total das consultas; máximo desempenho em operações pesadas.</p></div>
+        <div><p class="lbl">Cenários ideais</p><p class="sm">Relatórios e cargas em massa; consultas legadas complexas.</p></div>
+        <div><p class="lbl">O preço</p><p class="sm">Código repetitivo e refatoração frágil.</p></div>
+      </div>
+    </div>
+    <div class="stack" style="border:3px solid var(--ink); gap:0">
+      <div class="between" style="padding:18px 30px; border-bottom:2px solid var(--ink)"><h3 style="font-size:38px">ORM</h3><span class="mk" data-dg-icon="orm"></span></div>
+      <div class="stack" style="padding:18px 30px; gap:12px">
+        <div><p class="lbl">Vantagens</p><p class="sm">Muito mais produtividade; integra naturalmente com orientação a objetos.</p></div>
+        <div><p class="lbl">Cenários ideais</p><p class="sm">CRUD e cadastros; domínios com muitas regras e classes.</p></div>
+        <div><p class="lbl">O preço</p><p class="sm">Risco de N+1 e SQL ineficiente se mal configurado.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 37b · MATRIZ DE DECISÃO -->
+<section class="slide" data-eb="Parte 8 · Síntese">
+  <h2>Síntese: a <em>matriz de decisão</em></h2>
+  <div class="dg grow" data-dg="matriz" style="align-items:center"></div>
+  <div class="dk row" style="padding:20px 30px; gap:22px; flex-wrap:nowrap">
+    <span class="mk" data-mark style="width:28px;height:28px"></span>
+    <p style="font-size:30px; line-height:1.3">O ORM é indispensável, mas <b>nunca substitui</b> conhecer bem o banco relacional e otimizar consultas.</p>
+  </div>
+</section>
+
+<!-- 38 · RESUMO -->
+<section class="slide" data-eb="Resumo">
+  <h2>Os conceitos <em>em uma tela</em></h2>
+  <div class="body" style="justify-content:center">
+    <table class="t cmp">
+      <tr><th style="width:22%">Conceito</th><th style="width:40%">O que é</th><th>Em JPA</th></tr>
+      <tr><td>ORM</td><td>Traduz objetos ↔ tabelas</td><td>Hibernate, EclipseLink</td></tr>
+      <tr><td>Entidade</td><td>Classe com identidade → tabela</td><td><code>@Entity</code></td></tr>
+      <tr><td>Identificador</td><td>Atributo → chave primária</td><td><code>@Id</code>, <code>@GeneratedValue</code></td></tr>
+      <tr><td>Atributo</td><td>Campo ↔ coluna</td><td><code>@Column</code>, <code>@Transient</code></td></tr>
+      <tr><td>Objeto embutido</td><td>Classe de valor sem tabela</td><td><code>@Embeddable</code>, <code>@Embedded</code></td></tr>
+      <tr><td>Relacionamento</td><td>Referência ↔ chave estrangeira</td><td><code>@OneToMany</code>, <code>@ManyToOne</code>…</td></tr>
+      <tr><td>Dono</td><td>Lado que guarda a FK</td><td><code>@JoinColumn</code> · <code>mappedBy</code></td></tr>
+      <tr><td>Carregamento</td><td>Quando os associados são lidos</td><td><code>FetchType.LAZY / EAGER</code></td></tr>
+      <tr><td>Impedância</td><td>As diferenças entre os modelos</td><td class="serif" style="font-size:32px">o motivo de tudo isso</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 39 · ENCERRAMENTO -->
+<section class="slide dk" data-plain style="padding:0">
+  <div class="rule t"></div><div class="rule" style="top:auto; bottom:310px"></div>
+  <div style="position:absolute; left:960px; top:78px; bottom:310px; width:1px; background:var(--hl)"></div>
+  <div class="hd"><span class="l">Alany Gabriely · Gabriel Brito</span><span data-total></span></div>
+  <div style="position:absolute; left:80px; top:78px; bottom:310px; right:990px; display:flex; flex-direction:column; justify-content:center">
+    <h1 style="font-size:170px; line-height:.95; letter-spacing:-.05em">Obrigado<em>!</em></h1>
+  </div>
+  <div style="position:absolute; left:1020px; right:80px; top:78px; bottom:310px; display:flex; flex-direction:column; justify-content:center; gap:28px">
+    <p class="serif" style="font-size:100px; line-height:1; color:var(--sky)">Perguntas?</p>
+    <p style="font-size:38px; line-height:1.24">O ORM não substitui saber SQL: ele deixa você usar SQL <em>só quando realmente importa</em>.</p>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; bottom:48px; height:230px; display:grid; grid-template-columns:240px 1fr; gap:40px">
+    <div class="stack" style="gap:14px"><span class="lbl">Referências</span><span class="mk" data-mark style="width:48px;height:48px;margin-top:auto"></span></div>
+    <div class="stack" style="font-size:26px; line-height:1.4; gap:10px; color:var(--mut)">
+      <p>FOWLER, M. <i>Patterns of Enterprise Application Architecture</i>. Addison-Wesley, 2002.</p>
+      <p>BAUER, C.; KING, G.; GREGORY, G. <i>Java Persistence with Hibernate</i>. 2. ed. Manning, 2015.</p>
+      <p>ECLIPSE FOUNDATION. <i>Jakarta Persistence 3.1 Specification</i>, 2022. Documentação do Hibernate ORM.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ---------- símbolo ---------- */
+const P_ = (d) => `<path d="${d}"/>`;
+const MARK = '<svg viewBox="-50 -50 100 100" fill="currentColor" aria-hidden="true">' +
+  P_('M4 4H24A20 20 0 0 1 44 24A20 20 0 0 1 24 44A20 20 0 0 1 4 24Z') +
+  P_('M-4 4H-24A20 20 0 0 0 -44 24A20 20 0 0 0 -24 44A20 20 0 0 0 -4 24Z') +
+  P_('M4 -4H24A20 20 0 0 0 44 -24A20 20 0 0 0 24 -44A20 20 0 0 0 4 -24Z') +
+  P_('M-4 -4H-24A20 20 0 0 1 -44 -24A20 20 0 0 1 -24 -44A20 20 0 0 1 -4 -24Z') + '</svg>';
+
+/* ---------- primitivas SVG ---------- */
+const FF = { sans: "'Instrument Sans',Arial,sans-serif", serif: "'Instrument Serif',Georgia,serif", mono: "'JetBrains Mono',Consolas,monospace" };
+const FG = 'var(--fg)', BG = 'var(--bg)', MUT = 'var(--mut)', AC = 'var(--acc2)', WARN = 'var(--warn)', HLF = 'var(--hlfill)';
+const X = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function T(x, y, s, o = {}) {
+  const { size = 28, w = 400, a = 'start', c = FG, f = 'sans', it = false, op = 1, rot = 0, ls = 0 } = o;
+  const tr = rot ? ` transform="rotate(${rot} ${x} ${y})"` : '';
+  return `<text x="${x}" y="${y}" text-anchor="${a}" dominant-baseline="central"${tr} style="fill:${c};font-family:${FF[f]};font-size:${size}px;font-weight:${w};${it ? 'font-style:italic;' : ''}opacity:${op};letter-spacing:${ls}em">${X(s)}</text>`;
+}
+function R(x, y, w, h, o = {}) {
+  const { fill = BG, c = FG, sw = 2, dash = '', rx = 0, op = 1 } = o;
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" style="fill:${fill};stroke:${c};stroke-width:${sw};opacity:${op};${dash ? `stroke-dasharray:${dash};` : ''}"/>`;
+}
+function head(x, y, ang, c, s = 16) {
+  const cs = Math.cos(ang), sn = Math.sin(ang), k = .5;
+  const p1 = [x - s * cs + s * k * sn, y - s * sn - s * k * cs], p2 = [x - s * cs - s * k * sn, y - s * sn + s * k * cs];
+  return `<polygon points="${x},${y} ${p1} ${p2}" style="fill:${c}"/>`;
+}
+function A(x1, y1, x2, y2, o = {}) {
+  const { c = FG, sw = 2.5, dash = '', end = true, start = false, s = 16 } = o;
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  let out = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${c};stroke-width:${sw};${dash ? `stroke-dasharray:${dash};` : ''}"/>`;
+  if (end) out += head(x2, y2, ang, c, s);
+  if (start) out += head(x1, y1, ang + Math.PI, c, s);
+  return out;
+}
+const L = (x1, y1, x2, y2, o = {}) => A(x1, y1, x2, y2, { ...o, end: false });
+function PA(d, o = {}) {
+  const { c = FG, sw = 2.5, dash = '', end = null, fill = 'none', s = sw > 5 ? 28 : 16 } = o;
+  return `<path d="${d}" style="fill:${fill};stroke:${c};stroke-width:${sw};${dash ? `stroke-dasharray:${dash};` : ''}"/>` + (end ? head(end[0], end[1], end[2], c, s) : '');
+}
+function LB(x, y, s, o = {}) {           // rótulo com fundo que corta a linha
+  const { size = 23, f = 'mono', w = 500 } = o;
+  const wd = s.length * size * (f === 'mono' ? .6 : .52) + 20;
+  return `<rect x="${x - wd / 2}" y="${y - size * .75}" width="${wd}" height="${size * 1.5}" style="fill:${o.bg || BG}"/>` + T(x, y, s, { size, f, w, a: 'middle', ...o });
+}
+function tri(x, y, ang) {                // triângulo vazado de herança (ponta em x,y)
+  const s = 22, cs = Math.cos(ang), sn = Math.sin(ang), k = .55;
+  const p1 = [x - s * cs + s * k * sn, y - s * sn - s * k * cs], p2 = [x - s * cs - s * k * sn, y - s * sn + s * k * cs];
+  return `<polygon points="${x},${y} ${p1} ${p2}" style="fill:${BG};stroke:${FG};stroke-width:2.5"/>`;
+}
+function cyl(x, y, w, h, label, o = {}) {
+  const ry = 16, fill = o.fill || BG, tc = o.tc || FG;
+  return `<path d="M${x} ${y + ry} V${y + h - ry} A${w / 2} ${ry} 0 0 0 ${x + w} ${y + h - ry} V${y + ry}" style="fill:${fill};stroke:${FG};stroke-width:2.5"/>` +
+    `<ellipse cx="${x + w / 2}" cy="${y + ry}" rx="${w / 2}" ry="${ry}" style="fill:${fill};stroke:${FG};stroke-width:2.5"/>` +
+    T(x + w / 2, y + h / 2 + 10, label, { size: o.size || 28, w: 600, a: 'middle', c: tc });
+}
+/* tabela ER: cabeçalho + colunas, com marca PK/FK */
+function ER(x, y, w, name, cols, o = {}) {
+  const hh = o.hh || 54, rh = o.rh || 46, fs = o.fs || 25;
+  let s = R(x, y, w, hh + cols.length * rh) + `<rect x="${x}" y="${y}" width="${w}" height="${hh}" style="fill:${FG}"/>` +
+    T(x + 16, y + hh / 2, name, { size: fs + 1, w: 600, c: BG, f: 'mono' });
+  cols.forEach((col, i) => {
+    const cy = y + hh + i * rh;
+    if (col.hl) s += `<rect x="${x + 1.5}" y="${cy}" width="${w - 3}" height="${rh - 1}" style="fill:${HLF}"/>`;
+    if (i) s += `<line x1="${x}" y1="${cy}" x2="${x + w}" y2="${cy}" style="stroke:${FG};stroke-width:1;opacity:.3"/>`;
+    s += T(x + 16, cy + rh / 2, col.n, { size: fs, f: 'mono', w: col.k && col.k.includes('PK') ? 600 : 400 });
+    if (col.k) s += T(x + w - 14, cy + rh / 2, col.k, { size: fs - 5, a: 'end', c: AC, w: 700, f: 'sans' });
+  });
+  return { s, y: (i) => y + hh + i * rh + rh / 2, l: x, r: x + w, h: hh + cols.length * rh, b: y + hh + cols.length * rh };
+}
+/* classe/objeto UML */
+function UML(x, y, w, title, attrs, o = {}) {
+  const hh = 54, rh = 46, hl = !!o.hl, tc = hl ? BG : FG;
+  let s = R(x, y, w, hh + attrs.length * rh, { fill: hl ? FG : BG, dash: o.dash || '' }) +
+    T(x + w / 2, y + hh / 2, title, { size: 27, w: 600, a: 'middle', c: tc, f: o.titleMono === false ? 'sans' : 'mono' }) +
+    `<line x1="${x}" y1="${y + hh}" x2="${x + w}" y2="${y + hh}" style="stroke:${tc};stroke-width:1.5;opacity:.6"/>`;
+  attrs.forEach((a, i) => { s += T(x + 18, y + hh + i * rh + rh / 2, a, { size: 25, f: 'mono', c: tc }); });
+  return { s, y: (i) => y + hh + i * rh + rh / 2, l: x, r: x + w, h: hh + attrs.length * rh, cx: x + w / 2, b: y + hh + attrs.length * rh };
+}
+/* notação pé de galinha (linhas horizontais). out = +1 se a linha sai para a direita */
+const one = (x, y, out, c = FG) => `<path d="M${x + out * 14} ${y - 15} V${y + 15} M${x + out * 24} ${y - 15} V${y + 15}" style="stroke:${c};stroke-width:2.5"/>`;
+const many = (x, y, out, c = FG) => `<path d="M${x + out * 28} ${y} L${x} ${y - 16} M${x + out * 28} ${y} L${x} ${y} M${x + out * 28} ${y} L${x} ${y + 16}" style="fill:none;stroke:${c};stroke-width:2.5"/><path d="M${x + out * 36} ${y - 15} V${y + 15}" style="stroke:${c};stroke-width:2.5"/>`;
+function barV(x, yTop, w, yBase, c) { const r = Math.min(4, yBase - yTop); return `<path d="M${x} ${yBase} V${yTop + r} Q${x} ${yTop} ${x + r} ${yTop} H${x + w - r} Q${x + w} ${yTop} ${x + w} ${yTop + r} V${yBase} Z" style="fill:${c}"/>`; }
+function barH(x, y, len, h, c) { const r = Math.min(4, len); return `<path d="M${x} ${y} H${x + len - r} Q${x + len} ${y} ${x + len} ${y + r} V${y + h - r} Q${x + len} ${y + h} ${x + len - r} ${y + h} H${x} Z" style="fill:${c}"/>`; }
+
+/* ---------- diagramas ---------- */
+const DG = {};
+
+DG.coverMap = () => {
+  const u = UML(0, 60, 260, 'Aluno', ['id', 'nome', 'turma'], { titleMono: false });
+  const e = ER(400, 60, 260, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }, { n: 'turma_id', k: 'FK' }]);
+  let s = `<g style="--fg:#0B2550;--bg:#E8EDF4;--acc2:#2C62B8;--hlfill:#C4D1E1">` + u.s + e.s;
+  [0, 1, 2].forEach(i => s += A(262, u.y(i), 398, e.y(i), { start: true, c: '#0B2550', sw: 2 }));
+  s += `</g>` + T(0, 20, 'objeto', { size: 30, c: '#0B2550', w: 600 }) + T(660, 20, 'tabela', { size: 30, c: '#0B2550', w: 600, a: 'end' });
+  s += T(330, 330, 'ORM', { size: 64, c: '#F2F6FB', w: 500, a: 'middle', ls: -.02 });
+  return [660, 380, s];
+};
+
+DG.mundosObj = () => {
+  const a = UML(0, 0, 330, 'ana : Aluno', ['nome = "Ana"', 'turma = ●']);
+  const t = UML(450, 0, 330, 't : Turma', ['nome = "Turma A"', 'alunos = [●, ●]']);
+  let s = a.s + t.s + PA(`M320 ${a.y(1)} H390 V${t.y(0)} H448`, { c: AC, sw: 3, end: [450, t.y(0), 0] });
+  s += R(0, 200, 250, 60) + T(125, 230, 'Aluno', { a: 'middle', w: 600, f: 'mono', size: 26 });
+  s += R(530, 200, 250, 60) + T(655, 230, 'Pessoa', { a: 'middle', w: 600, f: 'mono', size: 26 });
+  s += L(250, 230, 510, 230) + tri(530, 230, 0) + T(390, 208, 'é uma (herança)', { a: 'middle', size: 24, f: 'serif', it: true });
+  return [780, 262, s];
+};
+DG.mundosTab = () => {
+  const al = ER(0, 0, 370, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }, { n: 'turma_id', k: 'FK', hl: 1 }]);
+  const tu = ER(490, 0, 290, 'turma', [{ n: 'id', k: 'PK' }, { n: 'nome' }]);
+  let s = al.s + tu.s + PA(`M370 ${al.y(2)} H430 V${tu.y(0)} H488`, { c: AC, sw: 3, end: [490, tu.y(0), 0] });
+  s += T(490, 180, 'a turma não guarda', { size: 24, f: 'serif', it: true }) + T(490, 210, 'a lista de alunos', { size: 24, f: 'serif', it: true });
+  return [780, 262, s];
+};
+
+DG.chartLinhas = () => {
+  const x0 = 200, sc = 32, rows = [['JDBC puro', 13, WARN, '13 linhas'], ['Com ORM', 1, AC, '1 linha']];
+  let s = '';
+  [0, 5, 10, 15].forEach(v => { s += `<line x1="${x0 + v * sc}" y1="0" x2="${x0 + v * sc}" y2="176" style="stroke:${FG};stroke-width:1;opacity:.15"/>` + T(x0 + v * sc, 196, v, { size: 22, a: 'middle', c: MUT }); });
+  rows.forEach(([n, v, c, lab], i) => {
+    const y = 16 + i * 84;
+    s += T(0, y + 30, n, { size: 28, w: 600 }) + barH(x0, y, v * sc, 60, c) + T(x0 + v * sc + 14, y + 30, lab, { size: 28, w: 600 });
+  });
+  s += `<line x1="${x0}" y1="0" x2="${x0}" y2="176" style="stroke:${FG};stroke-width:2"/>`;
+  return [760, 212, s];
+};
+
+DG.tomada = () => {
+  let s = '';
+  // plugue
+  s += L(0, 130, 110, 130, { sw: 5 }) + R(110, 70, 170, 120, { rx: 18, sw: 3 }) + R(280, 98, 70, 18, { rx: 9, fill: FG, sw: 0 }) + R(280, 144, 70, 18, { rx: 9, fill: FG, sw: 0 });
+  s += A(400, 130, 540, 130, { sw: 3, s: 20 });
+  // adaptador
+  s += R(580, 55, 330, 150, { fill: FG, rx: 16, sw: 0 });
+  s += `<circle cx="618" cy="107" r="11" style="fill:${BG}"/><circle cx="618" cy="153" r="11" style="fill:${BG}"/>`;
+  s += R(910, 92, 66, 14, { fill: FG, sw: 0 }) + R(910, 154, 66, 14, { fill: FG, sw: 0 });
+  s += T(765, 130, 'ORM', { size: 48, w: 600, c: BG, a: 'middle' });
+  s += A(1020, 130, 1160, 130, { sw: 3, s: 20 });
+  // tomada
+  s += R(1200, 40, 270, 180, { rx: 28, sw: 3 }) + R(1230, 92, 90, 16, { fill: FG, sw: 0 }) + R(1230, 152, 90, 16, { fill: FG, sw: 0 });
+  const lab = [[230, 'O plugue', 'seu objeto: referências e herança'], [765, 'O adaptador', 'o ORM: faz um encaixar no outro'], [1335, 'A tomada', 'a tabela: colunas e chaves']];
+  lab.forEach(([x, t, c]) => { s += T(x, 275, t, { size: 38, w: 600, a: 'middle' }) + T(x, 322, c, { size: 28, a: 'middle', c: MUT }); });
+  return [1500, 345, s];
+};
+
+DG.def = () => {
+  const u = UML(0, 0, 460, 'class Aluno', ['Long id', 'String nome', 'String email', 'Turma turma']);
+  const e = ER(1000, 0, 460, 'tabela aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }, { n: 'email' }, { n: 'turma_id', k: 'FK' }]);
+  let s = u.s + e.s;
+  const labs = ['identificador ↔ chave primária', 'atributo ↔ coluna', 'atributo ↔ coluna', 'referência ↔ chave estrangeira'];
+  s += A(462, 27, 998, 27, { start: true, c: AC, sw: 3 }) + LB(730, 27, 'classe ↔ tabela', { size: 27, f: 'sans', w: 600 });
+  labs.forEach((l, i) => { s += A(462, u.y(i), 998, e.y(i), { start: true }) + LB(730, u.y(i), l, { size: 25, f: 'sans' }); });
+  s += R(0, 320, 460, 66) + T(22, 353, 'new Aluno("Ana")', { size: 27, f: 'mono' });
+  s += R(1000, 320, 460, 66, { fill: HLF }) + T(1022, 353, "(1, 'Ana', 'ana@…', 7)", { size: 27, f: 'mono' });
+  s += A(462, 353, 998, 353, { start: true, c: AC, sw: 3 }) + LB(730, 353, 'objeto ↔ linha', { size: 27, f: 'sans', w: 600 });
+  s += T(230, 420, 'na aplicação', { size: 26, a: 'middle', c: MUT, w: 600 }) + T(1230, 420, 'no banco', { size: 26, a: 'middle', c: MUT, w: 600 });
+  s += T(730, 420, 'salvar →   ← ler', { size: 26, a: 'middle', c: MUT, w: 600 });
+  return [1460, 440, s];
+};
+
+DG.camadas = () => {
+  const bx = [['Sua aplicação', 'Aluno, Turma, regras de negócio'], ['ORM', 'Hibernate, EF Core: mapeia e gera SQL'], ['Driver', 'JDBC, ADO.NET: leva o SQL ao servidor'], ['Banco de dados', 'PostgreSQL, MySQL, Oracle']];
+  const dn = ['find(), persist()', 'SQL', 'SQL'], up = ['objetos', 'linhas', 'linhas'];
+  let s = '';
+  bx.forEach(([t, st], i) => {
+    const y = i * 176, hl = i === 1;
+    s += i === 3 ? cyl(0, y, 800, 124, '', {}) : R(0, y, 800, 124, { fill: hl ? FG : BG });
+    s += T(34, y + 46 + (i === 3 ? 8 : 0), t, { size: 36, w: 600, c: hl ? BG : FG }) + T(34, y + 90 + (i === 3 ? 8 : 0), st, { size: 27, c: hl ? BG : MUT, op: hl ? .8 : 1 });
+    if (i < 3) {
+      s += A(250, y + 128, 250, y + 172) + T(268, y + 150, dn[i], { size: 23, f: 'mono', w: 600 });
+      s += A(560, y + 172, 560, y + 128, { c: AC }) + T(578, y + 150, up[i], { size: 23, f: 'mono', w: 600 });
+    }
+  });
+  return [800, 652, s];
+};
+
+DG.fichas = () => {
+  let s = R(0, 20, 300, 230, { dash: '10 8' }) + T(24, 56, 'FICHA DE ALUNO', { size: 21, w: 700, ls: .1 });
+  ['nº  ____', 'nome  ____', 'email ____'].forEach((t, i) => s += T(24, 110 + i * 46, t, { size: 25, f: 'mono', c: MUT }));
+  [60, 145, 230].forEach(y => s += A(304, 135, 436, y, { c: AC }));
+  [['nº 1', 'Bruno'], ['nº 2', 'Carla'], ['nº 3', 'Ana']].forEach(([n, nm], i) => {
+    const y = 26 + i * 85;
+    s += R(440, y, 330, 68) + `<rect x="440" y="${y}" width="96" height="68" style="fill:${FG}"/>` + T(488, y + 34, n, { size: 24, f: 'mono', w: 600, c: BG, a: 'middle' }) + T(556, y + 34, nm, { size: 27, f: 'mono' });
+  });
+  s += T(150, 286, 'modelo = entidade', { size: 26, w: 600, a: 'middle' });
+  s += T(605, 286, 'ficha = linha · nº = PK', { size: 26, w: 600, a: 'middle' });
+  return [770, 305, s];
+};
+
+const VAR = (x, y, n) => R(x, y, 70, 60) + T(x + 35, y + 30, n, { size: 30, f: 'mono', w: 600, a: 'middle' });
+const OBJ = (x, y, w, h, l1, l2, hl) => R(x, y, w, h, { fill: hl ? FG : BG }) + T(x + w / 2, y + h / 2 - 16, l1, { size: 25, w: 600, a: 'middle', c: hl ? BG : FG, f: 'mono' }) + T(x + w / 2, y + h / 2 + 16, l2, { size: 24, a: 'middle', c: hl ? BG : FG, f: 'mono' });
+DG.id1 = () => [500, 210, VAR(0, 20, 'a') + VAR(0, 130, 'b') + OBJ(260, 55, 230, 100, 'Aluno', '"Ana"', 1) + A(72, 50, 256, 92) + A(72, 160, 256, 120)];
+DG.id2 = () => [500, 210, VAR(0, 20, 'a') + VAR(0, 130, 'b') + OBJ(260, 0, 230, 88, 'Aluno', '"Ana"') + OBJ(260, 122, 230, 88, 'Aluno', '"Ana"') + A(72, 50, 256, 44) + A(72, 160, 256, 166) + T(375, 105, '=  mesmo conteúdo', { size: 22, a: 'middle', w: 600 })];
+DG.id3 = () => [500, 210, OBJ(0, 0, 220, 88, 'a', 'id = 3') + OBJ(0, 122, 220, 88, 'b', 'id = 3') + OBJ(320, 60, 170, 90, 'linha', 'id 3', 1) + A(222, 44, 316, 96) + A(222, 166, 316, 116)];
+
+DG.ciclo = () => {
+  const st = (x, y, w, tag, name, alg, hl) => R(x, y, w, 176, { fill: hl ? FG : BG }) +
+    T(x + 28, y + 36, tag, { size: 24, f: 'mono', c: hl ? BG : FG, op: .75 }) +
+    T(x + 28, y + 88, name, { size: 44, w: 600, c: hl ? BG : FG }) +
+    T(x + 28, y + 140, alg, { size: 32, f: 'serif', it: true, c: hl ? BG : 'var(--acc)' });
+  let s = st(0, 110, 420, 'transient', 'Novo', 'na calçada do hotel') +
+    st(660, 110, 440, 'managed', 'Gerenciado', 'hóspede com check-in', 1) +
+    st(1340, 110, 420, 'detached', 'Desanexado', 'fez check-out') +
+    st(660, 480, 440, 'removed', 'Removido', 'cadastro encerrado');
+  s += A(424, 198, 654, 198, { sw: 3 }) + T(539, 172, 'persist()', { size: 26, f: 'mono', a: 'middle', w: 600 }) + T(539, 226, 'new Aluno()', { size: 22, f: 'mono', a: 'middle', c: MUT });
+  s += A(1104, 160, 1334, 160, { sw: 3 }) + T(1219, 134, 'detach()', { size: 26, f: 'mono', a: 'middle', w: 600 });
+  s += A(1340, 240, 1110, 240, { sw: 3 }) + T(1225, 268, 'merge()', { size: 26, f: 'mono', a: 'middle', w: 600 });
+  s += A(820, 290, 820, 474, { sw: 3 }) + T(804, 382, 'remove()', { size: 26, f: 'mono', a: 'end', w: 600 });
+  s += A(940, 480, 940, 296, { sw: 3 }) + T(956, 382, 'persist()', { size: 26, f: 'mono', w: 600 });
+  s += PA('M810 110 C810 20, 950 20, 950 104', { sw: 3, c: 'var(--acc)', end: [950, 110, Math.PI / 2] });
+  s += T(1000, 44, 'setNome() → UPDATE automático (dirty checking)', { size: 25, f: 'mono', w: 600 });
+  const note = (x, y, t, ls) => T(x, y, t, { size: 30, w: 600 }) + ls.map((l, i) => T(x, y + 42 + i * 38, l, { size: 28, c: MUT })).join('');
+  s += note(0, 510, 'Enquanto gerenciado', ['toda mudança é anotada', 'e vira UPDATE no commit,', 'sem chamar save()']);
+  s += note(1340, 510, 'flush / commit', ['é aqui que o SQL', 'de verdade vai ao banco;', 'removido vira DELETE']);
+  return [1760, 660, s];
+};
+
+DG.tipos = () => {
+  const rows = [['String', 'VARCHAR(255)', '"Ana"'], ['int / Integer', 'INTEGER', '21'], ['long / Long', 'BIGINT', '1024'], ['BigDecimal', 'DECIMAL(10,2)', '1999.90'],
+    ['boolean', 'BOOLEAN / BIT', 'true'], ['LocalDate', 'DATE', '2026-09-16'], ['LocalDateTime', 'TIMESTAMP', '… 20:14'], ['enum Status', 'INTEGER / VARCHAR', '0 ou "ATIVO"'], ['byte[]', 'BLOB / BYTEA', 'foto']];
+  let s = T(0, 14, 'JAVA', { size: 22, w: 700, ls: .12, c: MUT }) + T(520, 14, 'EXEMPLO', { size: 22, w: 700, ls: .12, c: MUT, a: 'middle' }) + T(700, 14, 'SQL', { size: 22, w: 700, ls: .12, c: MUT });
+  rows.forEach(([j, q, ex], i) => {
+    const y = 42 + i * 60, hot = i === 3;
+    s += R(0, y, 330, 50, { c: hot ? AC : FG, sw: hot ? 3.5 : 2 }) + T(18, y + 25, j, { size: 26, f: 'mono', w: 600 });
+    s += R(700, y, 400, 50, { c: hot ? AC : FG, sw: hot ? 3.5 : 2 }) + T(718, y + 25, q, { size: 26, f: 'mono' });
+    s += A(334, y + 25, 696, y + 25, { start: true, c: hot ? AC : FG, sw: hot ? 3.5 : 2, s: 13 }) + LB(515, y + 25, ex, { size: 23 });
+  });
+  return [1100, 582, s];
+};
+
+DG.embed = () => {
+  const c = UML(0, 0, 400, 'Cliente', ['Long id', 'String nome', 'Endereco endereco']);
+  const e = UML(560, 0, 400, 'Endereco', ['String rua', 'String cidade', 'String cep'], { dash: '10 7' });
+  let s = c.s + e.s + T(760, -22, '@Embeddable', { size: 23, f: 'mono', a: 'middle', c: AC, w: 600 });
+  s += `<polygon points="400,${c.y(2)} 420,${c.y(2) - 11} 440,${c.y(2)} 420,${c.y(2) + 11}" style="fill:${FG}"/>` + A(440, c.y(2), 556, c.y(2));
+  s += T(0, 428, 'tabela cliente (uma só!)', { size: 26, f: 'mono', w: 600 });
+  const cols = ['id', 'nome', 'rua', 'cidade', 'cep'], vals = ['1', 'Ana', 'Rua A, 10', 'Recife', '50000-000'];
+  cols.forEach((n, i) => {
+    const x = i * 192;
+    s += R(x, 290, 192, 54, { fill: FG, c: BG, sw: 1 }) + T(x + 16, 317, n, { size: 25, f: 'mono', w: 600, c: BG });
+    s += R(x, 344, 192, 54, { fill: i >= 2 ? HLF : BG, sw: 1.5 }) + T(x + 16, 371, vals[i], { size: 24, f: 'mono' });
+  });
+  s += A(200, 194, 190, 284, { dash: '8 6' }) + A(760, 194, 770, 284, { dash: '8 6', c: AC });
+  return [960, 440, s];
+};
+
+DG.legendER = () => {
+  let s = L(0, 22, 70, 22) + one(0, 22, 1) + T(84, 22, 'exatamente um', { size: 25 });
+  s += L(300, 22, 370, 22) + many(300, 22, 1) + T(384, 22, 'muitos (pé de galinha)', { size: 25 });
+  return [660, 44, s];
+};
+const mini = (ln, rn, lm, rm, cap) => () => {
+  let s = R(0, 10, 230, 64) + T(115, 42, ln, { size: 27, w: 600, a: 'middle', f: 'mono' }) + R(410, 10, 230, 64) + T(525, 42, rn, { size: 27, w: 600, a: 'middle', f: 'mono' });
+  s += L(230, 42, 410, 42) + (lm === 'm' ? many(230, 42, 1) : one(230, 42, 1)) + (rm === 'm' ? many(410, 42, -1) : one(410, 42, -1));
+  s += T(0, 110, cap, { size: 25, f: 'mono', c: 'var(--acc)' });
+  return [640, 128, s];
+};
+DG.mini11 = mini('Aluno', 'Carteirinha', 'o', 'o', 'banco → FK com UNIQUE');
+DG.mini1n = mini('Turma', 'Aluno', 'o', 'm', 'banco → FK fica em aluno');
+DG.minin1 = mini('Aluno', 'Turma', 'm', 'o', 'banco → coluna aluno.turma_id');
+DG.mininn = mini('Aluno', 'Disciplina', 'm', 'm', 'banco → tabela de junção');
+
+DG.refObj = () => {
+  const a = UML(0, 0, 330, 'ana : Aluno', ['nome = "Ana"', 'turma = ●']);
+  const t = UML(450, 0, 330, 't : Turma', ['id = 7', 'nome = "Turma A"'], { hl: 1 });
+  return [780, 150, a.s + t.s + PA(`M320 ${a.y(1)} H390 V${t.y(0)} H446`, { c: 'var(--acc)', sw: 3.5, end: [450, t.y(0), 0] })];
+};
+DG.refTab = () => {
+  const al = ER(0, 0, 400, 'aluno', [{ n: 'id = 1', k: 'PK' }, { n: 'nome = Ana' }, { n: 'turma_id = 7', k: 'FK', hl: 1 }]);
+  const tu = ER(500, 0, 280, 'turma', [{ n: 'id = 7', k: 'PK', hl: 1 }, { n: 'nome = Turma A' }]);
+  return [780, 192, al.s + tu.s + PA(`M400 ${al.y(2)} H450 V${tu.y(0)} H496`, { c: AC, sw: 3.5, end: [500, tu.y(0), 0] })];
+};
+
+DG.er11 = () => {
+  const al = ER(0, 0, 440, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }, { n: 'carteirinha_id', k: 'FK · UQ', hl: 1 }]);
+  const ca = ER(620, 0, 300, 'carteirinha', [{ n: 'id', k: 'PK' }, { n: 'codigo' }]);
+  let s = al.s + ca.s + PA(`M440 ${al.y(2)} H530 V${ca.y(0)} H620`) + one(440, al.y(2), 1) + one(620, ca.y(0), -1);
+  s += T(0, 250, 'aluno', { size: 22, f: 'mono', c: MUT });
+  const rows = [['1', 'Ana', '501'], ['2', 'Bruno', '502']];
+  rows.forEach((r, i) => { s += T(0, 290 + i * 40, `${r[0]}  ${r[1].padEnd(6)} → ${r[2]}`, { size: 25, f: 'mono' }); });
+  s += T(620, 250, 'carteirinha', { size: 22, f: 'mono', c: MUT });
+  [['501', 'UNI-0001'], ['502', 'UNI-0002']].forEach((r, i) => { s += T(620, 290 + i * 40, `${r[0]}  ${r[1]}`, { size: 25, f: 'mono' }); });
+  return [920, 330, s];
+};
+DG.er1n = () => {
+  const tu = ER(0, 0, 280, 'turma', [{ n: 'id', k: 'PK' }, { n: 'nome' }]);
+  const al = ER(460, 0, 380, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }, { n: 'turma_id', k: 'FK', hl: 1 }]);
+  return [840, 192, tu.s + al.s + PA(`M280 ${tu.y(0)} H370 V${al.y(2)} H460`) + one(280, tu.y(0), 1) + many(460, al.y(2), -1) +
+    T(370, tu.y(0) - 26, 'uma turma', { size: 22, a: 'middle', c: MUT }) + T(370, al.y(2) + 28, 'muitos alunos', { size: 22, a: 'middle', c: MUT })];
+};
+DG.ernn = () => {
+  const al = ER(0, 0, 220, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }]);
+  const j = ER(310, 0, 300, 'aluno_disciplina', [{ n: 'aluno_id', k: 'FK', hl: 1 }, { n: 'disciplina_id', k: 'FK', hl: 1 }], { fs: 24 });
+  const d = ER(700, 0, 220, 'disciplina', [{ n: 'id', k: 'PK' }, { n: 'nome' }]);
+  let s = al.s + j.s + d.s + L(220, al.y(0), 310, j.y(0)) + one(220, al.y(0), 1) + many(310, j.y(0), -1);
+  s += PA(`M610 ${j.y(1)} H655 V${d.y(0)} H700`) + many(610, j.y(1), 1) + one(700, d.y(0), -1);
+  return [920, 150, s];
+};
+
+DG.dir = () => {
+  const B = (x, y, t, o = {}) => R(x, y, 260, 84, { fill: o.hl ? FG : BG, dash: o.dash || '' }) + T(x + 130, y + 42, t, { size: 30, w: 600, a: 'middle', f: 'mono', c: o.hl ? BG : FG });
+  let s = T(0, 16, 'UNIDIRECIONAL', { size: 22, w: 700, ls: .12, c: MUT });
+  s += B(0, 44, 'Aluno') + B(560, 44, 'Turma') + A(262, 86, 556, 86, { sw: 3 }) + T(410, 62, 'getTurma()', { size: 25, f: 'mono', a: 'middle', w: 600 });
+  s += T(0, 196, 'BIDIRECIONAL', { size: 22, w: 700, ls: .12, c: MUT });
+  s += B(0, 230, 'Aluno', { hl: 1 }) + B(560, 230, 'Turma');
+  s += A(262, 252, 556, 252, { sw: 3 }) + T(410, 226, 'getTurma()', { size: 25, f: 'mono', a: 'middle', w: 600 });
+  s += A(558, 294, 264, 294, { sw: 3, c: AC }) + T(410, 322, 'getAlunos()', { size: 25, f: 'mono', a: 'middle', w: 600 });
+  s += R(0, 368, 260, 50, { fill: FG, sw: 0 }) + T(130, 393, 'dono: tem a FK', { size: 24, w: 600, a: 'middle', c: BG });
+  s += R(560, 368, 260, 50, { dash: '8 6' }) + T(690, 393, 'mappedBy', { size: 24, w: 600, a: 'middle', f: 'mono' });
+  return [820, 420, s];
+};
+
+DG.cascade = () => {
+  const box = (x, y, w, t, o = {}) => R(x, y, w, 70, { fill: o.fill || BG, c: o.c || FG, sw: o.sw || 2, dash: o.dash || '' }) + T(x + w / 2, y + 35, t, { size: 27, w: 600, a: 'middle', f: 'mono', c: o.tc || FG });
+  let s = T(0, 16, 'cascade = ALL', { size: 30, w: 700, f: 'mono' }) + T(0, 56, 'em.remove(pedido)', { size: 26, f: 'mono', c: MUT });
+  s += box(270, 80, 260, 'Pedido', { fill: FG, tc: BG });
+  [0, 290, 580].forEach((x, i) => {
+    s += PA(`M400 150 V190 H${x + 110} V226`, { end: [x + 110, 230, Math.PI / 2] });
+    s += box(x, 230, 220, `Item ${i + 1}`, { c: WARN, sw: 3.5, dash: '10 6' }) + T(x + 110, 330, 'DELETE', { size: 24, w: 700, a: 'middle', f: 'mono' });
+  });
+  s += `<line x1="870" y1="0" x2="870" y2="360" style="stroke:${FG};stroke-width:1;opacity:.25"/>`;
+  const ox = 950;
+  s += T(ox, 16, 'orphanRemoval = true', { size: 30, w: 700, f: 'mono' }) + T(ox, 56, 'pedido.getItens().remove(item3)', { size: 26, f: 'mono', c: MUT });
+  s += box(ox + 250, 80, 260, 'Pedido', { fill: FG, tc: BG });
+  [0, 280].forEach((x, i) => { s += PA(`M${ox + 380} 150 V190 H${ox + x + 110} V226`, { end: [ox + x + 110, 230, Math.PI / 2] }) + box(ox + x, 230, 220, `Item ${i + 1}`); });
+  s += PA(`M${ox + 380} 190 H${ox + 670}`, { dash: '8 6' }) + T(ox + 600, 190, '✕', { size: 34, w: 700, a: 'middle', c: WARN });
+  s += box(ox + 590, 230, 220, 'Item 3', { c: WARN, sw: 3.5, dash: '10 6' }) + T(ox + 700, 330, 'órfão → DELETE', { size: 24, w: 700, a: 'middle', f: 'mono' });
+  return [1760, 350, s];
+};
+
+DG.lazy = () => {
+  let s = '';
+  const t1 = 330, t2 = 1090;
+  s += `<line x1="${t1}" y1="40" x2="${t1}" y2="340" style="stroke:${FG};stroke-width:1.5;stroke-dasharray:6 6;opacity:.5"/>`;
+  s += `<line x1="${t2}" y1="40" x2="${t2}" y2="340" style="stroke:${FG};stroke-width:1.5;stroke-dasharray:6 6;opacity:.5"/>`;
+  s += T(t1, 20, 'em.find(Aluno.class, 1)', { size: 26, f: 'mono', w: 600, a: 'middle' }) + T(t2, 20, 'aluno.getTurma()', { size: 26, f: 'mono', w: 600, a: 'middle' });
+  const lane = (y, name) => R(0, y - 34, 170, 68, { fill: FG, sw: 0 }) + T(85, y, name, { size: 28, w: 700, a: 'middle', c: BG, f: 'mono' }) + `<line x1="170" y1="${y}" x2="1760" y2="${y}" style="stroke:${FG};stroke-width:1;opacity:.3"/>`;
+  const q = (x, y, w, t, o = {}) => R(x, y - 32, w, 64, { fill: o.empty ? BG : AC, c: o.empty ? FG : AC, dash: o.empty ? '9 7' : '', sw: 2 }) + T(x + 22, y, t, { size: 26, f: 'mono', w: 600, c: o.empty ? FG : '#FFFFFF' });
+  s += lane(120, 'LAZY') + q(360, 120, 330, 'SELECT aluno') + T(890, 120, 'turma = proxy vazio', { size: 30, f: 'serif', it: true, a: 'middle' }) + q(1120, 120, 330, 'SELECT turma');
+  s += lane(270, 'EAGER') + q(360, 270, 560, 'SELECT aluno JOIN turma') + q(1120, 270, 600, 'nenhuma consulta: já na memória', { empty: 1 });
+  s += A(170, 350, 1760, 350, { sw: 2 }) + T(1760, 378, 'tempo', { size: 24, a: 'end', c: MUT, w: 600 });
+  return [1760, 392, s];
+};
+
+DG.chartN1 = () => {
+  const Ns = [10, 25, 50, 100], x0 = 90, x1 = 800, yT = 30, yB = 430, max = 110;
+  const Y = v => yB - (v / max) * (yB - yT);
+  let s = '';
+  [0, 25, 50, 75, 100].forEach(v => { s += `<line x1="${x0}" y1="${Y(v)}" x2="${x1}" y2="${Y(v)}" style="stroke:${FG};stroke-width:1;opacity:${v ? .15 : .6}"/>` + T(x0 - 14, Y(v), v, { size: 23, a: 'end', c: MUT }); });
+  const gw = (x1 - x0) / Ns.length, bw = 64;
+  Ns.forEach((n, i) => {
+    const cx = x0 + gw * i + gw / 2;
+    s += barV(cx - bw - 2, Y(n + 1), bw, yB, '#BC6A20') + T(cx - bw / 2 - 2, Y(n + 1) - 20, n + 1, { size: 26, w: 700, a: 'middle' });
+    s += barV(cx + 2, Y(1), bw, yB, '#2C62B8');
+    if (i === Ns.length - 1) s += T(cx + 2 + bw / 2, Y(1) - 20, '1', { size: 26, w: 700, a: 'middle' });
+    s += T(cx, yB + 30, `${n} turmas`, { size: 25, a: 'middle', w: 600 });
+  });
+  return [820, 470, s];
+};
+
+DG.trips = () => {
+  let s = '';
+  const row = (y, title, n, sw, lab, col) => {
+    let r = T(0, y, title, { size: 30, w: 700 }) + R(0, y + 36, 170, 130) + T(85, y + 101, 'App', { size: 30, w: 600, a: 'middle' }) + cyl(600, y + 36, 170, 130, 'Banco');
+    for (let i = 0; i < n; i++) { const yy = n === 1 ? y + 101 : y + 50 + i * (100 / (n - 1)); r += A(174, yy, 596, yy, { c: col, sw, s: n === 1 ? 22 : 10 }); }
+    return r + LB(385, y + 101, lab, { size: 30, f: 'sans', w: 700 });
+  };
+  s += row(20, 'Laço com LAZY', 14, 1.6, '101 idas', '#BC6A20');
+  s += row(280, 'Com JOIN FETCH', 1, 7, '1 ida', '#2C62B8');
+  return [770, 450, s];
+};
+
+DG.seq = () => {
+  const C = 120, O = 560, B = 1000;
+  let s = '';
+  s += `<rect x="${O + 12}" y="266" width="${B - O - 24}" height="236" style="fill:${HLF};opacity:.8"/>` + T((O + B) / 2 + 60, 290, 'nenhum SQL vai ao banco', { size: 30, f: 'serif', it: true, a: 'middle' });
+  [[C, 'Seu código', 0], [O, 'ORM (contexto)', 1], [B, 'Banco', 0]].forEach(([x, t, hl]) => {
+    s += `<line x1="${x}" y1="64" x2="${x}" y2="730" style="stroke:${FG};stroke-width:1.5;stroke-dasharray:7 7;opacity:.55"/>`;
+    s += R(x - 120, 0, 240, 64, { fill: hl ? FG : BG }) + T(x, 32, t, { size: 27, w: 600, a: 'middle', c: hl ? BG : FG });
+  });
+  const msg = (y, x1, x2, t, o = {}) => A(x1, y, x2 + (x2 > x1 ? -4 : 4), y, { c: o.c || FG, dash: o.dash || '', sw: 2.5 }) + LB((x1 + x2) / 2, y - 20, t, { size: 23, bg: o.bg || BG });
+  const step = (y, n) => `<rect x="0" y="${y - 18}" width="${String(n).length > 1 ? 56 : 36}" height="36" rx="18" style="fill:${FG}"/>` + T(String(n).length > 1 ? 28 : 18, y + 1, n, { size: 22, w: 700, a: 'middle', c: BG });
+  const note = (y, t) => R(O + 30, y, 330, 46, { fill: BG, sw: 1.5 }) + T(O + 46, y + 23, t, { size: 23, f: 'mono' });
+  s += step(120, 1) + msg(120, C, O, 'find(Turma, 7)') + msg(170, O, B, 'SELECT … id = 7', { c: AC }) + msg(222, B, O, 'linha', { dash: '8 6' });
+  s += step(310, '2-3') + msg(310, C, O, 'persist(new Aluno)') + note(328, 'INSERT agendado');
+  s += step(410, 4) + msg(410, C, O, 'setNome("Turma B")') + note(425, 'mudança anotada');
+  s += step(560, 5) + msg(560, C, O, 'commit()') + msg(600, O, B, 'INSERT INTO aluno', { c: AC }) + msg(648, O, B, 'UPDATE turma', { c: AC }) + msg(696, O, B, 'COMMIT', { c: AC });
+  return [1120, 730, s];
+};
+
+DG.tree = () => {
+  const B = (x, y, w, t, hl) => R(x, y, w, 52, { fill: hl ? FG : BG }) + T(x + w / 2, y + 26, t, { size: 25, f: 'mono', w: 600, a: 'middle', c: hl ? BG : FG });
+  let s = B(0, 0, 330, 'Aluno { matricula }') + B(0, 70, 330, 'Professor { salario }') + B(470, 35, 260, 'Pessoa { nome }', 1);
+  s += PA('M330 26 H390 V96 H330') + L(390, 61, 448, 61) + tri(470, 61, 0);
+  return [740, 122, s];
+};
+DG.inhSingle = () => {
+  const e = ER(0, 0, 330, 'pessoa', [{ n: 'id', k: 'PK' }, { n: 'tipo' }, { n: 'nome' }, { n: 'matricula', hl: 1 }, { n: 'salario', hl: 1 }], { rh: 40, hh: 46, fs: 24 });
+  let s = e.s + R(-5, e.y(1) - 22, 340, 44, { fill: 'none', c: AC, sw: 3.5, rx: 6 }) + A(420, e.y(1) - 50, 342, e.y(1) - 6, { c: AC, s: 12 }) + T(360, e.y(1) - 66, 'discriminador', { size: 24, w: 700 });
+  s += T(350, 190, 'NULL para quem', { size: 26, f: 'serif', it: true }) + T(350, 222, 'não usa a coluna', { size: 26, f: 'serif', it: true });
+  return [540, 250, s];
+};
+DG.inhJoined = () => {
+  const p = ER(0, 0, 220, 'pessoa', [{ n: 'id', k: 'PK' }, { n: 'nome' }], { rh: 40, hh: 46, fs: 24 });
+  const a = ER(290, 0, 250, 'aluno', [{ n: 'id', k: 'PK·FK' }, { n: 'matricula' }], { rh: 40, hh: 46, fs: 24 });
+  const pr = ER(290, 140, 250, 'professor', [{ n: 'id', k: 'PK·FK' }, { n: 'salario' }], { rh: 40, hh: 46, fs: 24 });
+  return [540, 266, p.s + a.s + pr.s + A(290, a.y(0), 222, p.y(0)) + PA(`M290 ${pr.y(0)} H110 V${p.b + 4}`, { end: [110, p.b, -Math.PI / 2] })];
+};
+DG.inhTpc = () => {
+  const a = ER(0, 0, 255, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome', hl: 1 }, { n: 'matricula' }], { rh: 40, hh: 46, fs: 24 });
+  const p = ER(285, 0, 255, 'professor', [{ n: 'id', k: 'PK' }, { n: 'nome', hl: 1 }, { n: 'salario' }], { rh: 40, hh: 46, fs: 24 });
+  return [540, 230, a.s + p.s + T(0, 200, 'nome repetido nas duas', { size: 26, f: 'serif', it: true })];
+};
+
+DG.ar = () => {
+  let s = R(0, 20, 340, 150) + T(20, 50, 'Aluno', { size: 30, w: 700, f: 'mono' }) + `<line x1="0" y1="78" x2="340" y2="78" style="stroke:${FG};stroke-width:1.5;opacity:.5"/>`;
+  s += T(20, 106, 'nome', { size: 25, f: 'mono' }) + T(20, 144, 'save() · find()', { size: 25, f: 'mono', w: 600, c: AC });
+  s += A(344, 95, 566, 95, { sw: 3 }) + T(455, 70, 'SQL', { size: 25, f: 'mono', w: 600, a: 'middle' }) + cyl(570, 20, 170, 150, 'Banco');
+  return [740, 180, s];
+};
+DG.dm = () => {
+  let s = R(0, 20, 200, 150) + T(100, 58, 'Aluno', { size: 30, w: 700, f: 'mono', a: 'middle' }) + T(100, 104, 'só dados', { size: 24, a: 'middle' }) + T(100, 136, 'e regras', { size: 24, a: 'middle' });
+  s += R(270, 45, 230, 100, { fill: FG }) + T(385, 82, 'Entity', { size: 26, w: 600, f: 'mono', a: 'middle', c: BG }) + T(385, 112, 'Manager', { size: 26, w: 600, f: 'mono', a: 'middle', c: BG });
+  s += A(268, 95, 204, 95, { sw: 3 }) + A(502, 95, 566, 95, { sw: 3 }) + cyl(570, 20, 170, 150, 'Banco');
+  return [740, 180, s];
+};
+
+DG.quad = () => {
+  const x0 = 70, W = 830, H = 590, cw = (W - x0) / 2, ch = H / 2;
+  const cell = (cx, cy, hl, t, ls) => {
+    const x = x0 + cx * cw, y = cy * ch;
+    return R(x, y, cw, ch, { fill: hl ? FG : BG, sw: 1.5 }) + T(x + 28, y + 50, t, { size: 34, w: 600, c: hl ? BG : FG }) +
+      ls.map((l, i) => T(x + 28, y + 100 + i * 38, l, { size: 27, c: hl ? BG : MUT, op: hl ? .85 : 1 })).join('');
+  };
+  let s = cell(0, 0, 0, 'SQL direto', ['ou micro-ORM', '(Dapper, MyBatis, JDBI)', 'relatórios, cargas', 'em lote']) +
+    cell(1, 0, 0, 'ORM + SQL nativo', ['ORM no dia a dia,', 'SQL nos pontos', 'críticos']) +
+    cell(0, 1, 0, 'ORM simples', ['Active Record', 'CRUDs e protótipos']) +
+    cell(1, 1, 1, 'ORM', ['Data Mapper (JPA)', 'domínios ricos,', 'muitas classes']);
+  s += A(x0, H, x0, -6, { sw: 3 }) + A(x0, H, W + 6, H, { sw: 3 });
+  s += T(28, H / 2, 'volume de dados / exigência de desempenho', { size: 24, w: 600, a: 'middle', rot: -90, c: MUT });
+  s += T(x0 + 4, H + 30, 'baixa', { size: 23, c: MUT }) + T(W, H + 30, 'alta', { size: 23, a: 'end', c: MUT }) + T((x0 + W) / 2, H + 30, 'complexidade do domínio', { size: 25, w: 600, a: 'middle' });
+  return [W + 8, H + 48, s];
+};
+
+
+/* ---------- diagramas adaptados do Blueprint ---------- */
+const ICON = {
+  sql: `<g style="fill:none;stroke:#2C62B8;stroke-width:3">${[8, 22, 36, 50].map(v => `<path d="M${v + 4} 6 V58 M6 ${v + 4} H58"/>`).join('')}<path d="M10 52 L26 30 L38 40 L56 12" style="stroke-width:4"/></g>`,
+  orm: `<g style="stroke:#102C57;stroke-width:3;fill:none"><circle cx="12" cy="14" r="6" style="fill:#102C57"/><circle cx="12" cy="50" r="6" style="fill:#102C57"/><circle cx="26" cy="32" r="6" style="fill:#102C57"/><path d="M16 18 L22 28 M16 46 L22 36 M32 32 H40"/><path d="M36 27 L42 32 L36 37" style="fill:#102C57"/><rect x="44" y="18" width="18" height="28"/><path d="M44 27 H62 M44 36 H62 M53 18 V46"/></g>`,
+};
+
+DG.ponte = () => {
+  let s = '';
+  // mundo dos objetos: grafo
+  const N = { A: [300, 120, 'Aluno'], T: [100, 250, 'Turma'], P: [490, 270, 'Pessoa'], D: [150, 460, 'Disciplina'], C: [420, 470, 'Carteirinha'] };
+  const r = 62;
+  const edge = (a, b, lab, o = {}) => {
+    const [x1, y1] = N[a], [x2, y2] = N[b], ang = Math.atan2(y2 - y1, x2 - x1);
+    const sx = x1 + r * Math.cos(ang), sy = y1 + r * Math.sin(ang), ex = x2 - r * Math.cos(ang), ey = y2 - r * Math.sin(ang);
+    let e = o.tri ? L(sx, sy, ex - 22 * Math.cos(ang), ey - 22 * Math.sin(ang), { sw: 2.5 }) + tri(ex, ey, ang) : A(sx, sy, ex, ey, { sw: 2.5 });
+    return e + LB((sx + ex) / 2, (sy + ey) / 2, lab, { size: 24, f: 'serif', it: true, w: 400, bg: BG });
+  };
+  s += edge('A', 'T', 'referência') + edge('A', 'P', 'herança', { tri: 1 }) + edge('A', 'D', 'lista') + edge('A', 'C', 'associação') + edge('T', 'D', 'lista');
+  Object.values(N).forEach(([x, y, t]) => { s += `<circle cx="${x}" cy="${y}" r="${r}" style="fill:${FG}"/>` + T(x, y, t, { size: t.length > 8 ? 19 : 23, w: 600, a: 'middle', c: BG }); });
+  s += T(300, 590, 'Mundo dos objetos', { size: 30, w: 600, a: 'middle' });
+
+  // a ponte
+  const dy = 380;
+  const q = (t, p0, p1, p2) => (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
+  for (let i = 1; i < 10; i++) {
+    const t = i / 10, x = q(t, 753, 900, 1043), y = q(t, 170, 350, 170);
+    s += `<line x1="${x}" y1="${y}" x2="${x}" y2="${dy}" style="stroke:${FG};stroke-width:1.5;opacity:.6"/>`;
+  }
+  [[660, 753], [1043, 1136]].forEach(([x0, x1]) => {
+    for (let i = 1; i < 4; i++) { const t = i / 4, x = x0 + (x1 - x0) * t; const y = x0 === 660 ? q(t, 370, 230, 170) : q(t, 170, 230, 370); s += `<line x1="${x}" y1="${y}" x2="${x}" y2="${dy}" style="stroke:${FG};stroke-width:1.5;opacity:.6"/>`; }
+  });
+  s += `<path d="M660 370 Q700 230 753 170 Q900 350 1043 170 Q1096 230 1136 370" style="fill:none;stroke:${FG};stroke-width:4"/>`;
+  s += R(738, 150, 30, 290, { fill: FG, sw: 0 }) + R(1028, 150, 30, 290, { fill: FG, sw: 0 });
+  s += R(640, dy, 520, 30, { fill: FG, sw: 0 });
+  [0, 1, 2].forEach(i => { s += `<path d="M640 ${470 + i * 26} q 40 -12 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" style="fill:none;stroke:${FG};stroke-width:1.5;opacity:.25"/>`; });
+  s += `<circle cx="690" cy="${dy - 20}" r="16" style="fill:${FG}"/>` + A(712, dy - 20, 780, dy - 20, { sw: 2.5, s: 12 });
+  s += R(1066, dy - 32, 56, 26, { fill: AC, sw: 0 }) + A(1000, dy - 19, 1060, dy - 19, { sw: 2.5, s: 12, c: AC });
+  s += T(898, 60, 'ORM', { size: 60, w: 600, a: 'middle' }) + T(898, 110, 'mapeia · converte · gera SQL', { size: 25, a: 'middle', c: MUT });
+  s += T(898, 590, 'objeto → linha  ·  linha → objeto', { size: 30, w: 600, a: 'middle' });
+
+  // mundo relacional
+  const al = ER(1230, 20, 290, 'aluno', [{ n: 'id', k: 'PK' }, { n: 'nome' }, { n: 'turma_id', k: 'FK', hl: 1 }], { rh: 42, hh: 48, fs: 24 });
+  const tu = ER(1230, 220, 290, 'turma', [{ n: 'id', k: 'PK' }, { n: 'nome' }], { rh: 42, hh: 48, fs: 24 });
+  const j = ER(1230, 380, 290, 'aluno_disciplina', [{ n: 'aluno_id', k: 'FK', hl: 1 }, { n: 'disciplina_id', k: 'FK', hl: 1 }], { rh: 42, hh: 48, fs: 22 });
+  s += al.s + tu.s + j.s;
+  s += PA(`M1520 ${al.y(2)} H1552 V${tu.y(0)} H1526`, { c: AC, end: [1522, tu.y(0), Math.PI] });
+  s += PA(`M1520 ${j.y(0)} H1572 V${al.y(0)} H1526`, { c: AC, end: [1522, al.y(0), Math.PI] });
+  s += A(1162, dy + 15, 1224, dy + 15, { sw: 3 });
+  s += cyl(1610, 180, 150, 180, 'Banco', { size: 26 }) + A(1576, 290, 1606, 290, { sw: 2.5, s: 12 });
+  s += T(1480, 590, 'Mundo relacional', { size: 30, w: 600, a: 'middle' });
+  return [1760, 610, s];
+};
+
+DG.n1cascade = () => {
+  let s = '';
+  s += R(560, 0, 640, 64, { fill: FG, sw: 0 }) + T(880, 32, 'turmas.forEach(t -> t.getAlunos())', { size: 26, f: 'mono', w: 600, a: 'middle', c: BG });
+  s += A(880, 64, 880, 104, { sw: 3 });
+  s += R(690, 106, 380, 64, { fill: '#2C62B8', sw: 0 }) + T(880, 138, 'SELECT * FROM turma;', { size: 27, f: 'mono', w: 600, a: 'middle', c: '#FFFFFF' });
+  s += T(1100, 138, '1 consulta para listar 100 turmas', { size: 30, w: 600 });
+  s += L(880, 170, 880, 205, { c: '#BC6A20', sw: 3 }) + L(270, 205, 1110, 205, { c: '#BC6A20', sw: 3 });
+  const stair = (x0, ids) => {
+    let o = '';
+    ids.forEach((id, i) => {
+      const x = x0 + i * 80, y = 236 + i * 64;
+      if (i === 0) o += PA(`M${x + 30} 205 V${y - 3}`, { c: '#BC6A20', sw: 3, end: [x + 30, y, Math.PI / 2] });
+      else { const px = x - 80, py = y - 64; o += PA(`M${px + 30} ${py + 54} V${y + 27} H${x - 3}`, { c: '#BC6A20', sw: 3, end: [x, y + 27, 0] }); }
+      o += R(x, y, 350, 54, { fill: '#BC6A20', sw: 0 }) + T(x + 16, y + 27, `SELECT … turma_id = ${id};`, { size: 22, f: 'mono', w: 600, c: '#FFFFFF' });
+    });
+    return o;
+  };
+  s += stair(240, [1, 2, 3, 4, 5]) + stair(1080, [96, 97, 98, 99, 100]);
+  s += T(900, 300, '…', { size: 70, w: 600, a: 'middle' }) + T(900, 350, '+100 consultas', { size: 28, w: 700, a: 'middle' });
+  return [1760, 556, s];
+};
+
+DG.inhChallenge = () => {
+  let s = '';
+  const B = (x, y, t) => R(x, y, 220, 64, { fill: FG, sw: 0 }) + T(x + 110, y + 32, t, { size: 28, f: 'mono', w: 600, a: 'middle', c: BG });
+  s += B(390, 0, 'Pessoa') + B(170, 130, 'Aluno') + B(610, 130, 'Professor');
+  s += PA('M500 64 V96 H280 V126', { sw: 3, end: [280, 130, Math.PI / 2] }) + PA('M500 96 H720 V126', { sw: 3, end: [720, 130, Math.PI / 2] });
+  // tabela em perspectiva
+  const yT = 330, yB = 520, xL0 = 190, xR0 = 810, xL1 = 40, xR1 = 960;
+  const xl = y => xL0 + (xL1 - xL0) * (y - yT) / (yB - yT), xr = y => xR0 + (xR1 - xR0) * (y - yT) / (yB - yT);
+  const cols = ['id', 'tipo', 'nome', 'matricula', 'salario'];
+  [yT, 372, 420, 470, yB].forEach(y => { s += `<line x1="${xl(y)}" y1="${y}" x2="${xr(y)}" y2="${y}" style="stroke:#2C62B8;stroke-width:3"/>`; });
+  for (let i = 0; i <= cols.length; i++) {
+    const t = i / cols.length;
+    s += `<line x1="${xL0 + (xR0 - xL0) * t}" y1="${yT}" x2="${xL1 + (xR1 - xL1) * t}" y2="${yB}" style="stroke:#2C62B8;stroke-width:3"/>`;
+  }
+  cols.forEach((c, i) => { const t = (i + .5) / cols.length, y = 351, x = xl(y) + (xr(y) - xl(y)) * t; s += T(x, y, c, { size: 23, f: 'mono', w: 600, a: 'middle', c: '#2C62B8' }); });
+  // setas em zigue-zague
+  const zig = (x0, y0, x1, y1, o = {}) => {
+    const pts = [[x0, y0]];
+    for (let k = 1; k < 4; k++) { const t = k / 4; pts.push([x0 + (x1 - x0) * t + (k % 2 ? 16 : -16), y0 + (y1 - y0) * t]); }
+    pts.push([x1, y1]);
+    const ang = Math.atan2(y1 - pts[3][1], x1 - pts[3][0]);
+    return `<polyline points="${pts.join(' ')}" style="fill:none;stroke:${o.c || MUT};stroke-width:2.5;stroke-dasharray:7 6"/>` + head(x1, y1, ang, o.c || MUT, 14);
+  };
+  const colX = i => { const t = (i + .5) / cols.length; return xL0 + (xR0 - xL0) * t; };
+  s += zig(230, 196, colX(0), yT - 6) + zig(280, 196, colX(2), yT - 6) + zig(330, 196, colX(3), yT - 6);
+  s += zig(680, 196, colX(2) + 20, yT - 6) + zig(760, 196, colX(4), yT - 6);
+  // encaixes que falham
+  s += zig(370, 196, 560, 262, { c: '#BC6A20' }) + T(580, 270, '✕', { size: 34, w: 700, c: '#BC6A20' });
+  s += zig(800, 196, 930, 262, { c: '#BC6A20' }) + T(950, 270, '✕', { size: 34, w: 700, c: '#BC6A20' });
+  return [1000, 530, s];
+};
+
+DG.espectro = () => {
+  const x0 = 40, x1 = 1720, y = 92, k = 1200;
+  let s = `<defs><linearGradient id="gSpec" x1="0" x2="1"><stop offset="0" stop-color="#2C62B8"/><stop offset="1" stop-color="#102C57"/></linearGradient></defs>`;
+  for (let x = x0 + 40; x < x1 - 30; x += 60) s += `<line x1="${x}" y1="${y - 34}" x2="${x}" y2="${y + 34}" style="stroke:${FG};stroke-width:1.5;opacity:${(x - x0) % 240 === 40 ? .5 : .2}"/>`;
+  s += `<rect x="${x0 + 30}" y="${y - 12}" width="${x1 - x0 - 60}" height="24" style="fill:url(#gSpec)"/>`;
+  s += `<polygon points="${x0},${y} ${x0 + 44},${y - 30} ${x0 + 44},${y + 30}" style="fill:#2C62B8"/>`;
+  s += `<polygon points="${x1},${y} ${x1 - 44},${y - 30} ${x1 - 44},${y + 30}" style="fill:#102C57"/>`;
+  s += T(x0, 20, '← Controle e desempenho máximo (SQL)', { size: 30, w: 600 }) + T(x1, 20, 'Produtividade e integração (ORM) →', { size: 30, w: 600, a: 'end' });
+  s += R(k - 36, y - 40, 72, 80, { rx: 12, sw: 3 }) + `<circle cx="${k}" cy="${y}" r="16" style="fill:none;stroke:${FG};stroke-width:3"/>`;
+  s += T(k + 56, y + 58, 'o padrão para a maioria dos sistemas', { size: 24, f: 'serif', it: true, c: FG });
+  return [1760, 150, s];
+};
+
+DG.matriz = () => {
+  const G = 'rgba(16,44,87,.4)';
+  const cx = [215, 655, 1105, 1545], bw = 410;
+  let s = R(620, 0, 520, 100, { sw: 3 }) + T(880, 34, 'Qual é o perfil principal', { size: 30, w: 600, a: 'middle' }) + T(880, 70, 'do seu sistema?', { size: 30, w: 600, a: 'middle' });
+  const th = { c: G, sw: 9, s: 28 };
+  s += PA(`M620 50 H${cx[0]} V156`, { c: G, sw: 9, end: [cx[0], 180, Math.PI / 2] }) + PA(`M1140 50 H${cx[3]} V156`, { c: G, sw: 9, end: [cx[3], 180, Math.PI / 2] });
+  s += PA(`M880 100 V130 H${cx[1]} V156`, { c: G, sw: 9, end: [cx[1], 180, Math.PI / 2] }) + PA(`M880 130 H${cx[2]} V156`, { c: G, sw: 9, end: [cx[2], 180, Math.PI / 2] });
+  // setas grossas: cabeça maior
+  s = s.replace(/<polygon points="([^"]+)" style="fill:rgba\(16,44,87,\.4\)"\/>/g, (m) => m);
+  const prof = [['CRUD rápido,', 'lógica centrada', 'nos dados'], ['Regras de negócio', 'complexas (DDD),', 'esquema que evolui'], ['Relatórios em massa,', 'agregações pesadas', '(OLAP)'], ['Dados muito dinâmicos,', 'aninhados, sem', 'estrutura fixa']];
+  const strokes = [FG, FG, '#2C62B8', MUT];
+  const dec = [['Active Record', 'ex.: Rails, Django'], ['Data Mapper', 'ex.: Hibernate, EF Core'], ['SQL nativo', 'sem ORM, por conjuntos'], ['NoSQL', 'documentos JSON']];
+  const fills = ['#102C57', '#102C57', '#2C62B8', '#5B6B80'];
+  const icon = (i, x, y) => {
+    const w = 'style="fill:none;stroke:#fff;stroke-width:3"';
+    if (i === 0) return `<g ${w}><circle cx="${x + 12}" cy="${y + 12}" r="8"/><circle cx="${x + 50}" cy="${y + 18}" r="8"/><circle cx="${x + 26}" cy="${y + 52}" r="8"/><path d="M${x + 19} ${y + 16} L${x + 42} ${y + 18} M${x + 16} ${y + 20} L${x + 22} ${y + 44} M${x + 46} ${y + 26} L${x + 32} ${y + 46}"/></g>`;
+    if (i === 1) return `<g ${w}><rect x="${x + 16}" y="${y + 16}" width="32" height="32"/><path d="M${x} ${y + 32} H${x + 16} M${x + 48} ${y + 32} H${x + 64} M${x + 32} ${y} V${y + 16} M${x + 32} ${y + 48} V${y + 64}"/></g>`;
+    if (i === 2) return `<g ${w}><ellipse cx="${x + 32}" cy="${y + 12}" rx="26" ry="9"/><path d="M${x + 6} ${y + 12} V${y + 52} A26 9 0 0 0 ${x + 58} ${y + 52} V${y + 12} M${x + 6} ${y + 32} A26 9 0 0 0 ${x + 58} ${y + 32}"/></g>`;
+    return `<text x="${x + 32}" y="${y + 34}" text-anchor="middle" dominant-baseline="central" style="fill:#fff;font-family:${FF.mono};font-size:34px;font-weight:600">{ }</text>`;
+  };
+  cx.forEach((c, i) => {
+    const x = c - bw / 2;
+    s += R(x, 184, bw, 150, { c: strokes[i], sw: 3 });
+    prof[i].forEach((l, k) => { s += T(c, 222 + k * 38, l, { size: 26, a: 'middle', w: 500 }); });
+    s += A(c, 336, c, 396, { c: G, sw: 9, s: 26 });
+    s += R(x, 400, bw, 150, { fill: fills[i], sw: 0 }) + icon(i, x + 24, 443);
+    s += T(x + 112, 436, 'DECISÃO', { size: 19, w: 700, c: '#FFFFFF', op: .75, ls: .12 }) + T(x + 112, 476, dec[i][0], { size: 29, w: 600, c: '#FFFFFF' }) + T(x + 112, 514, dec[i][1], { size: 22, c: '#FFFFFF', op: .85 });
+  });
+  return [1760, 556, s];
+};
+
+/* ---------- montagem ---------- */
+const slides = [...document.querySelectorAll('section.slide')];
+const total = String(slides.length).padStart(2, '0');
+slides.forEach((s, i) => {
+  const n = String(i + 1).padStart(2, '0');
+  if (s.dataset.plain === undefined) {
+    s.insertAdjacentHTML('afterbegin',
+      `<div class="rule t"></div><div class="rule b"></div>` +
+      `<span class="tick" style="left:72px;top:70px"></span><span class="tick" style="right:72px;top:70px"></span>` +
+      `<div class="hd"><span class="l">${s.dataset.eb || ''}</span><span class="r">${n} / ${total}</span></div>` +
+      `<div class="ft"><span class="l">ORM · Persistência de Dados</span><span class="r">Seminário 01</span></div>`);
+  }
+});
+document.querySelectorAll('[data-mark]').forEach(e => e.remove());
+document.querySelectorAll('[data-total]').forEach(e => e.textContent = `${total} / ${total}`);
+document.querySelectorAll('[data-goto]').forEach(e => {
+  const i = slides.findIndex(sl => sl.dataset.part === e.dataset.goto);
+  e.textContent = 'slide ' + String(i + 1).padStart(2, '0');
+});
+document.querySelectorAll('[data-dg-icon]').forEach(e => {
+  e.style.width = '64px'; e.style.height = '64px';
+  e.innerHTML = `<svg viewBox="0 0 64 64">${ICON[e.dataset.dgIcon]}</svg>`;
+});
+document.querySelectorAll('ul.ls li, ol.nl li').forEach(li => {
+  if (!(li.children.length === 1 && li.firstElementChild.tagName === 'DIV')) li.innerHTML = `<span>${li.innerHTML}</span>`;
+  if (li.closest('ul.ls')) li.insertAdjacentHTML('afterbegin', `<span class="bul"></span>`);
+});
+document.querySelectorAll('.dg[data-dg]').forEach(el => {
+  const [w, h, body] = DG[el.dataset.dg]();
+  const k = +(el.dataset.scale || 1);
+  el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -30 ${w} ${h + 40}" width="${w * k}" height="${(h + 40) * k}">${body}</svg>`;
+});
+
+/* realce de sintaxe (Java / SQL / Ruby) */
+const TOK = /(\/\/[^\n]*|--[^\n]*|#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(@\w+)|\b(public|private|protected|class|new|return|if|for|null|true|false|SELECT|FROM|WHERE|JOIN|ON|INSERT|INTO|VALUES|CREATE|TABLE|PRIMARY|KEY|NOT|NULL|UNIQUE|AUTO_INCREMENT|DISTINCT|FETCH|BIGINT|VARCHAR)\b/g;
+document.querySelectorAll('.code pre').forEach(pre => {
+  if (pre.querySelector('span')) return;
+  const src = pre.textContent;
+  let out = '', last = 0;
+  src.replace(TOK, (m, c, st, a, k, off) => {
+    out += X(src.slice(last, off));
+    out += `<span class="tk-${c ? 'c' : st ? 's' : a ? 'a' : 'k'}">${X(m)}</span>`;
+    last = off + m.length;
+    return m;
+  });
+  pre.innerHTML = out + X(src.slice(last));
+});
+
+/* relatório de estouro (lido pelo build) */
+window.addEventListener('load', () => document.fonts.ready.then(() => setTimeout(() => {
+  const out = [];
+  slides.forEach((s, i) => {
+    const sr = s.getBoundingClientRect();
+    const plain = s.dataset.plain !== undefined;
+    const targets = [...s.querySelectorAll('*')].filter(el => !el.closest('.hd, .ft, svg') && !el.classList.contains('rule') && !el.classList.contains('tick') && !el.classList.contains('half'));
+    if (!plain) targets.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.height && r.bottom - sr.top > 1080 - 76 + 1) out.push(`${i + 1}: BOTTOM ${Math.round(r.bottom - sr.top)} <${el.tagName}.${el.className}>`);
+      if (r.width && (r.right - sr.left > 1920 - 60 || r.left - sr.left < 60)) out.push(`${i + 1}: SIDE ${Math.round(r.left - sr.left)}-${Math.round(r.right - sr.left)} <${el.tagName}.${el.className}>`);
+    });
+    s.querySelectorAll('pre, td, p, h2, h3, .dg, .dg > svg').forEach(el => {
+      const r = el.getBoundingClientRect(), pr = el.parentElement.getBoundingClientRect();
+      if (el.tagName === 'PRE' && el.scrollWidth > el.clientWidth + 2) out.push(`${i + 1}: PRE-X ${el.textContent.slice(0, 30)}`);
+      if (el.tagName === 'PRE' && el.scrollHeight > el.clientHeight + 2) out.push(`${i + 1}: PRE-Y ${el.textContent.slice(0, 30)}`);
+      if (el.tagName === 'svg') { const sc = r.width / el.viewBox.baseVal.width; if (sc < .9 * (+(el.parentElement.dataset.scale || 1))) out.push(`${i + 1}: SVG-SCALE ${sc.toFixed(2)} ${el.parentElement.dataset.dg}`); }
+      if (r.bottom > pr.bottom + 3 && getComputedStyle(el.parentElement).overflow !== 'visible') out.push(`${i + 1}: CLIP <${el.tagName}>`);
+    });
+  });
+  const pre = document.createElement('pre');
+  pre.id = 'report'; pre.style.display = 'none';
+  pre.textContent = out.join('\n') || 'NO-OVERFLOW';
+  document.body.appendChild(pre);
+}, 300)));
+</script>
+</body>
+</html>

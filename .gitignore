@@ -1,0 +1,15 @@
+# senha do banco: nunca versionar
+demo-matricula/db.properties
+
+# classes compiladas pelo executar.bat / executar.sh
+demo-matricula/out/
+*.class
+
+# arquivos de ferramentas locais
+.impeccable/
+**/.impeccable/
+.vscode/
+.idea/
+__pycache__/
+Thumbs.db
+.DS_Store

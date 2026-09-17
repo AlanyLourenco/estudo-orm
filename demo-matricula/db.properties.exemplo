@@ -1,0 +1,12 @@
+# Exemplo de configuração da conexão com o PostgreSQL.
+# Você NÃO precisa copiar este arquivo: na primeira execução a tela de conexão
+# pede a senha e cria o db.properties sozinha (se "lembrar a senha" estiver marcado).
+#
+# Se preferir criar à mão: copie para db.properties e preencha a senha.
+# O db.properties real não vai para o Git (está no .gitignore), porque guarda a senha.
+banco=postgres
+host=localhost
+porta=5432
+nome=escola_orm
+usuario=postgres
+senha=
